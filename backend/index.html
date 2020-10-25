@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <h2 id="timestamp"></h2>
+  <div id="data"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+  <script src="https://cdn.tutorialjinni.com/timeago.js/4.0.2/timeago.full.min.js"></script>
+  <script>
+    (function () {
+      const socket = io('http://localhost:8080');
+      const $dataDiv = document.querySelector('#data');
+      const $ageH2 = document.querySelector('#timestamp');
+      socket.on('connection', (data) => {
+        console.log(data)
+      });
+      socket.on('network', (data) => {
+        $dataDiv.innerHTML = JSON.stringify(data);
+      });
+      socket.on('network:block', data => {
+        $ageH2.innerHTML = JSON.stringify(data);
+      })
+    })();
+  </script>
+</body>
+
+</html>

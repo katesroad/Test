@@ -1,0 +1,30 @@
+# postgresql
+db_host=localhost
+db_port=5432
+db_username=fsn365
+db_password=miaojia520
+db_name=mainnet
+
+
+# mongodb
+mongo_uri=mongodb://localhost:27017/mainnet
+
+# rpc
+rpc_url = http://localhost:9001
+wss_url = http://mainnetpublicgateway1.fusionnetwork.io:10001
+
+# redis
+redis_host=localhost
+redis_port=6379
+
+# asset queue
+token_rabbitmq_url = amqp://localhost:5672
+token_rabbitmq_queue = token_mainnet
+
+# address queue
+address_rabbitmq_url = amqp://localhost:5672
+address_rabbitmq_queue = address_mainnet
+
+# balance queue
+balance_rabbitmq_url = amqp://localhost:5672
+balance_rabbitmq_queue = balance_mainnet
