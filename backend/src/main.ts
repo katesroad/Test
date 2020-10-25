@@ -8,7 +8,7 @@ import { MicroserviceOptions } from '@nestjs/microservices';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule, { cors: true });
+  const app = await NestFactory.create(AppModule);
   app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalFilters(new CatchAllFilter());
 
@@ -19,12 +19,15 @@ async function bootstrap() {
   app.connectMicroservice<MicroserviceOptions>(config.get('service:tcp'));
   await app.startAllMicroservicesAsync();
 
-  app.use(
-    rateLimit({
-      windowMs: 1 * 1000,
-      max: 10,
-    }),
-  );
+  app.use(rateLimit({
+    windowMs: 1 * 1000,
+    max: 10
+  }));
+
+  app.enableCors({
+    origin: 'https://fsn365.netlify.app',
+    optionsSuccessStatus: 200
+  })
 
   const { port = 8080, name } = config.get('app');
 
