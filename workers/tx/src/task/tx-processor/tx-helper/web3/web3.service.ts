@@ -43,7 +43,6 @@ export class Web3Service extends CustomLogger {
       })
       .catch(e => {
         console.log(e);
-        process.exit();
         return null;
       });
   }
@@ -63,7 +62,7 @@ export class Web3Service extends CustomLogger {
           return snapshot;
         } else {
           console.log(`Get erc20 token snapshot failed`);
-          process.exit();
+	  return null;
         }
       })
       .catch(e => {
@@ -72,7 +71,7 @@ export class Web3Service extends CustomLogger {
           console.log(
             `retried 4 times, did not work for getting token snapshot.`,
           );
-          process.exit();
+         return null;
         }
         return this.getTokenSnapshot(address);
       });
