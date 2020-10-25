@@ -136,16 +136,22 @@ export class OriginService {
     const { erc20Receipts } = rawTx;
     const { erc20, value, logType } = erc20Receipts[0];
 
-    // mightbe Approval here
+    // might be Approval here
     if (logType !== 'Transfer') return { data: null, tokens: [] };
-
-    const tokenSnapshot = await helper.getTokenSnapshot(erc20);
-    const { symbol, precision } = tokenSnapshot;
-    const qty = +value / Math.pow(10, precision);
-
-    const data = { token: erc20, symbol, value: qty };
-    const tokens = [erc20];
-
-    return { data, tokens };
+    try {
+      const tokenSnapshot = await helper.getTokenSnapshot(erc20);
+      const { symbol, precision } = tokenSnapshot;
+      const qty = +value / Math.pow(10, precision);
+      const data = { token: erc20, symbol, value: qty };
+      const tokens = [erc20];
+      return { tokens, data };
+    } catch {
+      // the erc20 is exchagne address
+      const qty = +value / Math.pow(10, 18);
+      return {
+        tokens: [],
+        data: { value: qty, symbol: 'Unknown', token: erc20 },
+      };
+    }
   }
 }
