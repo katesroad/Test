@@ -3,6 +3,8 @@ dist
 
 # node_modules
 node_modules
+# dont what is it
+backend/dump.rdb
 
 # Logs
 logs
