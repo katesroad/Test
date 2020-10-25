@@ -1,12 +1,6 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectKnex, Knex } from 'nestjs-knex';
-import {
-  TokensHoldersQueryDto,
-  CustomLogger,
-  QueryTokensCmdDto,
-  QueryCmdDto,
-} from '../../common';
-import { IToken } from '../../models';
+import { CustomLogger, QueryTokensCmdDto, QueryCmdDto } from '../../common';
 import { HelperService } from './helper.service';
 
 @Injectable()
@@ -19,20 +13,28 @@ export class PgTokenService extends CustomLogger {
   }
 
   getToken(hash: string) {
-    const table = this.getTokenTable(hash);
-    return this.knex(table)
+    return this.knex('tokens')
       .where({ hash })
-      .select('*')
+      .select(
+        'hash',
+        'name',
+        'symbol',
+        'issuer',
+        'create_at',
+        'holders',
+        'txs',
+        'qty',
+        'precision',
+        'verified',
+      )
       .limit(1)
       .first();
   }
 
   getTokens(query: QueryTokensCmdDto): Promise<any> {
     const { cmd, size, anchor, type } = query;
-    let table = 'tokens';
-    if (type === 1) table = 'erc20';
 
-    this.logInfo({ method: 'getTokens', data: { table, type, ...query } });
+    this.logInfo({ method: 'getTokens', data: { type, ...query } });
 
     const { order, operator } = this.helper.getOrderAndOperatorByCmd(cmd);
     const select = [
@@ -46,20 +48,21 @@ export class PgTokenService extends CustomLogger {
       'txs',
     ];
 
-    const getTokensCount = this.knex(table)
-      .select('id')
-      .orderBy('id', 'desc')
+    const getTokensCount = this.knex('tokens')
+      .where({ token_type: type })
+      .count('id')
       .limit(1)
       .first()
       .then(record => {
-        if (record) return record.id;
+        if (record) return record.count;
         else return 0;
       });
     let getTokens;
 
     if (['first', 'last'].includes(cmd)) {
-      getTokens = this.knex(table)
-        .orderBy('holders', order)
+      getTokens = this.knex('tokens')
+        .where({ token_type: type })
+        .orderBy('txs', order)
         .select(select)
         .limit(size)
         .then(tokens => {
@@ -67,10 +70,11 @@ export class PgTokenService extends CustomLogger {
           else return tokens;
         });
     } else {
-      getTokens = this.knex(table)
-        .where('holders', operator, anchor)
+      getTokens = this.knex('tokens')
+        .where({ token_type: type })
+        .andWhere('txs', operator, anchor)
         .select(select)
-        .orderBy('id', order)
+        .orderBy('txs', order)
         .limit(size)
         .then(tokens => {
           if (cmd === 'prev') return tokens.reverse();
@@ -88,14 +92,11 @@ export class PgTokenService extends CustomLogger {
   ): Promise<{
     txs: number;
     holders: number;
-    create_at: number;
-    active_at: number;
   }> {
-    const table = this.getTokenTable(token);
-    this.logInfo({ method: 'getTokensTxCount', data: { table, token } });
+    this.logInfo({ method: 'getTokensTxCount', data: token });
 
-    return this.knex(table)
-      .select('txs', 'holders', 'create_at', 'active_at')
+    return this.knex('tokens')
+      .select('txs', 'holders')
       .where({ hash: token })
       .limit(1)
       .first();
@@ -103,14 +104,11 @@ export class PgTokenService extends CustomLogger {
 
   // url example: https://etherscan.io/token/0xdac17f958d2ee523a2206206994597c13d831ec7#balances
   getTokenHolders(token: string, query: QueryCmdDto): Promise<any> {
-    console.log(query);
     let { cmd, anchor, size, sort = 'qty' } = query;
     let table = 'address_tokens';
-    let holdersTable = 'tokens';
     if (token.length === 42) {
       sort = 'qty';
       table = 'address_erc20_tokens';
-      holdersTable = 'erc20';
     }
 
     this.logInfo({
@@ -122,20 +120,13 @@ export class PgTokenService extends CustomLogger {
 
     let select = ['token', 'address', 'qty'];
     if (table === 'address_tokens') {
-      select = [...select, 'qty_in', 'qty_own'];
+      select = [...select, 'qty_in'];
     }
-    const getHoldersCount = this.knex(holdersTable)
-      .where({ hash: token })
-      .select('holders')
-      .first()
-      .limit(1)
-      .then(record => {
-        if (record) return record.holders;
-        return 0;
-      });
+    const getHoldersCount = this.getTokenStats(token).then(
+      stats => stats.holders,
+    );
     let getHolders;
 
-    console.log(anchor, cmd, sort, order, operator);
     if (['first', 'last'].includes(cmd)) {
       getHolders = this.knex(table)
         .where({ token })
@@ -153,7 +144,6 @@ export class PgTokenService extends CustomLogger {
         .orderBy(sort, order)
         .limit(size)
         .then(holders => {
-          console.log(holders);
           if (cmd === 'prev') return holders.reverse();
           else return holders;
         });
@@ -163,12 +153,6 @@ export class PgTokenService extends CustomLogger {
       const [holders, total] = data;
       return { holders, total };
     });
-  }
-
-  private cleanToken(tokenData: any): IToken {
-    const token = { ...tokenData };
-    delete token.id;
-    return token;
   }
 
   private getTokenTable(token: string): string {
