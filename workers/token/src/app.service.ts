@@ -9,10 +9,9 @@ import {
   DB_CMD,
   DbOperation,
 } from './models';
-import { CustomLogger } from './common/custom-logger';
-import { TokenService } from './token/token.service';
-import { INVALID_FSN_TOKEN } from './common/constants';
-import { RedisHelperService } from './redis-helper/redis-helper.service';
+import { CustomLogger } from './common';
+import { TokenService } from './token';
+import { RedisHelperService } from './redis-helper';
 
 @Injectable()
 export class AppService extends CustomLogger {
@@ -25,14 +24,9 @@ export class AppService extends CustomLogger {
   }
 
   async trackTokensStatsInBatch(msgs: TokenTxsCountMsg[]): Promise<boolean> {
-    const statsList = msgs.filter(stats => {
-      const { token } = stats;
-      if (!this.isInvalidToken(token)) return stats;
-    });
-    if (statsList.length === 0) return true;
-
+    if (msgs.length === 0) return true;
     const provider = this.pg.getTrxProvider();
-    const getOperations = statsList.map(stats =>
+    const getOperations = msgs.map(stats =>
       this.getTokenStatsOperation(stats, provider),
     );
     const operations: DbOperation[] = await Promise.all(
@@ -77,14 +71,10 @@ export class AppService extends CustomLogger {
   async trackTokensHoldersCountInBatch(
     msgs: TokenHoldersCountMsg[],
   ): Promise<boolean> {
-    const statsList = msgs.map(stats => {
-      const { token } = stats;
-      if (!this.isInvalidToken(token)) return stats;
-    });
-    if (statsList.length === 0) return true;
+    if (msgs.length === 0) return true;
 
     const provider = this.pg.getTrxProvider();
-    const getOperations = statsList.map(stats =>
+    const getOperations = msgs.map(stats =>
       this.getTokenHoldersOperation(stats, provider),
     );
     const operations: DbOperation[] = await Promise.all(
@@ -190,8 +180,6 @@ export class AppService extends CustomLogger {
 
   // track fusion token quantity change cmd
   async updateTokenSupply(token: string): Promise<boolean> {
-    if (this.isInvalidToken(token)) return true;
-
     const qty = await this.token.getTokenSupply(token);
     if (qty === -1) return true;
 
@@ -221,12 +209,7 @@ export class AppService extends CustomLogger {
   private async getTokenDataByTokenHash(
     tokenHash: string,
   ): Promise<Partial<TokenInfo>> {
-    if (this.isInvalidToken(tokenHash)) return null;
     return this.token.getTokenInfoByTokenHash(tokenHash);
-  }
-
-  private isInvalidToken(token: string) {
-    return token === INVALID_FSN_TOKEN;
   }
 
   // cache token stats information

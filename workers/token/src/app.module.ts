@@ -5,7 +5,7 @@ import { config } from './config';
 import { AppController } from './app.controller';
 import { RedisHelperModule } from './redis-helper/redis-helper.module';
 import { PgModule } from './pg/pg.module';
-import { TokenModule } from './token/token.module';
+import { TokenModule } from './token';
 
 @Module({
   imports: [
