@@ -37,7 +37,7 @@ as
     address_erc20_tokens.qty as qty, address, token , symbol
   from address_erc20_tokens
     left join
-    erc20
+    tokens
     on 
   erc20.hash = address_erc20_tokens.token;
 
