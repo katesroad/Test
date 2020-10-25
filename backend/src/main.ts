@@ -1,10 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { ConfigService } from '@nestjs/config';
-import { AppModule } from './app.module';
+import * as rateLimit from 'express-rate-limit';
 import { ResponseInterceptor } from './common/interceptors';
 import { CatchAllFilter } from './common/filters';
 import { Logger } from '@nestjs/common';
 import { MicroserviceOptions } from '@nestjs/microservices';
+import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { cors: true });
@@ -17,6 +18,13 @@ async function bootstrap() {
   app.connectMicroservice<MicroserviceOptions>(config.get('service:web3'));
   app.connectMicroservice<MicroserviceOptions>(config.get('service:tcp'));
   await app.startAllMicroservicesAsync();
+
+  app.use(
+    rateLimit({
+      windowMs: 1 * 1000,
+      max: 10,
+    }),
+  );
 
   const { port = 8080, name } = config.get('app');
 
