@@ -14,8 +14,9 @@ export class TxHelperService {
   ) {}
 
   async getTokenSnapshot(token: string): Promise<TokenSnapshot> {
-    if (token === FSN_TOKEN) return { symbol: 'FSN', precision: 18 };
-    const key = `token:${token}:snapshot`;
+    const tokenHash = token.trim();
+    if (tokenHash === FSN_TOKEN) return { symbol: 'FSN', precision: 18 };
+    const key = `token:${tokenHash}:snapshot`;
 
     let snapshot: TokenSnapshot | null = await this.redis
       .getCachedValue(key)
@@ -23,8 +24,11 @@ export class TxHelperService {
 
     if (snapshot) return snapshot;
 
-    if (token.length == 42) snapshot = await this.erc20.getTokenSnapshot(token);
-    else snapshot = await this.fusion.getTokenSnapshot(token);
+    if (tokenHash.length == 42) {
+      snapshot = await this.erc20.getTokenSnapshot(tokenHash);
+    } else {
+      snapshot = await this.fusion.getTokenSnapshot(tokenHash);
+    }
 
     if (snapshot) this.redis.cacheValue(key, snapshot);
 

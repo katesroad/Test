@@ -8,6 +8,7 @@ const Web3 = require('web3');
 
 @Injectable()
 export class Web3Service extends CustomLogger {
+  private retried = 0;
   private web3: any;
 
   constructor(config: ConfigService) {
@@ -40,16 +41,41 @@ export class Web3Service extends CustomLogger {
           qty,
         };
       })
-      .catch(e => null);
+      .catch(e => {
+        console.log(e);
+        process.exit();
+        return null;
+      });
   }
 
   async getTokenSnapshot(address: string): Promise<TokenSnapshot> {
+    if (this.retried) {
+      await this.sleep(200);
+    }
     return this.getTokenInfo(address)
       .then(data => {
         const { symbol, precision } = data;
         return { symbol, precision };
       })
-      .catch(e => null);
+      .then(snapshot => {
+        if (snapshot) {
+          this.retried = 0;
+          return snapshot;
+        } else {
+          console.log(`Get erc20 token snapshot failed`);
+          process.exit();
+        }
+      })
+      .catch(e => {
+        this.retried += 1;
+        if (this.retried > 4) {
+          console.log(
+            `retried 4 times, did not work for getting token snapshot.`,
+          );
+          process.exit();
+        }
+        return this.getTokenSnapshot(address);
+      });
   }
 
   private getErc20Prop(contract: any, prop: string): Promise<any> {
@@ -58,6 +84,14 @@ export class Web3Service extends CustomLogger {
         if (err) reject(err);
         if (res) resolve(res);
       });
+    });
+  }
+
+  private sleep(ms: number) {
+    return new Promise(resolve => {
+      setTimeout(() => {
+        resolve(null);
+      }, ms);
     });
   }
 }

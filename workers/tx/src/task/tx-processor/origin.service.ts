@@ -134,7 +134,11 @@ export class OriginService {
     helper: TxHelperService,
   ): Promise<TxAssetsAndData<TxAssetData>> {
     const { erc20Receipts } = rawTx;
-    const { erc20, value } = erc20Receipts[0];
+    const { erc20, value, logType } = erc20Receipts[0];
+
+    // mightbe Approval here
+    if (logType !== 'Transfer') return { data: null, tokens: [] };
+
     const tokenSnapshot = await helper.getTokenSnapshot(erc20);
     const { symbol, precision } = tokenSnapshot;
     const qty = +value / Math.pow(10, precision);
