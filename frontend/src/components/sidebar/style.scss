@@ -1,0 +1,44 @@
+@import '@/css/quasar.variables.scss';
+
+.sidebar {
+  height: 100vh;
+  max-width: 296px;
+  padding-top: 24px;
+  padding-left: 24px;
+  background-color: #071C4F;
+  font-size: 16px;
+
+  ul {
+    list-style: none;
+  }
+
+  &__header {
+    padding-bottom: 16px;
+  }
+
+  .category {
+    margin-top: 32px;
+
+    a {
+      display: block;
+      color: #fdfdfd;
+      line-height: 24px;
+      font-size: 120%;
+      margin-top: 10px;
+      text-transform: capitalize;
+    }
+
+    &__name {
+      display: block;
+      margin-bottom: 10px;
+      color: #e5e5e5;
+      opacity: .6;
+    }
+  }
+
+  .btn-close {
+    font-size: 200%;
+    min-width: 44px;
+    color: #e5e5e5;
+  }
+}

@@ -1,0 +1,11 @@
+.token__holders {
+
+  th:last-child,
+  td:last-child {
+    display: none;
+
+    @media screen and (min-width:767px) {
+      display: table-cell;
+    }
+  }
+}

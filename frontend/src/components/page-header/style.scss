@@ -1,0 +1,101 @@
+.q-header {
+  color: #091841;
+  $shadow: rgba(128, 138, 157, 0.08) 0px 1px 2px,
+    rgba(128, 138, 157, 0.12) 0px 4px 12px;
+
+  section {
+    padding: 4px 0;
+
+    &.with-shadow {
+      background-color: white;
+      box-shadow: $shadow;
+    }
+  }
+
+  img {
+    display: block;
+  }
+
+  a {
+    display: block;
+    color: #091841;
+
+    &:hover {
+      color: $primary;
+    }
+  }
+
+  .q-btn__content {
+    text-transform: capitalize !important;
+    font-weight: normal;
+  }
+
+  a:hover {
+    text-decoration: none;
+  }
+
+  .search-form {
+    min-width: 320px;
+    margin: 0 1rem;
+    display: none;
+
+    @media screen and (min-width: 767px) {
+      display: flex;
+    }
+
+    &--mobile {
+      display: block;
+      margin-left: 0;
+      margin-right: 0;
+      padding-left: 16px;
+      padding-right: 16px;
+      padding-bottom: 16px;
+      box-shadow: $shadow;
+
+      @media screen and (min-width: 767px) {
+        display: none;
+      }
+    }
+  }
+
+  .q-drawer-container {
+    @media screen and(min-width: 767px) {
+      display: none !important;
+    }
+  }
+
+  &__menu {
+    @media screen and (min-width:768px) {
+      display: none
+    }
+  }
+}
+
+.q-menu {
+  a {
+    display: block;
+    color: #333;
+
+    &:hover {
+      color: $primary;
+    }
+  }
+}
+
+.q-btn-dropdown--simple .q-btn-dropdown__arrow {
+  margin-left: 2px;
+  font-size: 1.2rem;
+}
+
+.q-btn__wrapper:before {
+  display: none
+}
+
+.blockchain-btn,
+.token-btn {
+  display: none;
+
+  @media screen and(min-width:768px) {
+    display: block;
+  }
+}

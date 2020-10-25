@@ -1,0 +1,49 @@
+# Transaction types
+
+- Transfer
+  - meaning: transfer an asset from a wallet address to another wallet address
+  - example:
+    https://fsn365.netlify.app/address/0x8e6bda71f3f0f49ddd29969de79afcfac4457379
+
+- Transfer TimeLock
+  - meaing: given the token/asset ownership only for a small period of time
+  - text: transfer 10 FSN(3 years)
+  - example: https://fsn365.netlify.app/address/0x5277edca59b46f3428bcc3cf3de6c88b6ceacef2
+  - tip: we can add a clock right close the transfer icon
+
+- Gennotation
+  - meaning: create an identification for a wallet address
+  - text: apply USAN: notation number
+  - example: https://fsn365.netlify.app/block/136(please look at transaction component)
+
+- Buy Ticket
+  - meaning: buy a ticket for being placed at mining pool
+  - text: Buy Ticket
+  - example: https://fsn365.netlify.app/block/136(please look at transaction component)
+
+- Asset Gennotation/Destory
+  - meaing: Issue amount of token or Destory amount of token
+  - text: issue/Destory 10 pool
+  - example: 
+    >1. Issue token: https://fsn365.netlify.app/token/0xab3e11c1f201d5a51a0934f3c170f091154602ae002704a73c4713c2fcd559d9
+    >2. Destory token: You can just replace the issue as Destory
+  - create a token
+
+- swap(native swap)
+  - meaning: swap an asset to another asset for two involved wallet address
+  - text: make/take/recall swap: swap id
+  - example: https://fsn365.netlify.app/address/0xb2a46485d73b47af2c7a62ed1868c48a557dddc0
+  please check the transaction component at page 4101-4110 of 4115
+
+
+## Transactions happened on anyswap dex(https://anyswap.exchange/)
+
+- swap:
+  - meaning: two wallets swap assets with each other
+  - example: https://fsn365.netlify.app/address/0x9823c57f56172b14e141476a3de3d26e6ce6c357
+- add liquidity
+  - meaning: list a swap pair on an open market:
+  - text: add liquidity 10FSN <=> 20 any
+- remove liquidity:
+  - meaning: remove a swap from the open market
+  - text: remove liquidity: 10 FSN <=> 20 any

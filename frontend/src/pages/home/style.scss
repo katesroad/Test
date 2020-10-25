@@ -1,0 +1,25 @@
+.home {
+  &__search {
+    padding-bottom: .5 * $tab-padding;
+    margin-bottom: $tab-margin;
+
+    .search-form {
+      max-width: 340px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  }
+
+  &__network {
+    &>div {
+      padding: $tab-padding;
+      margin-bottom: 0.5 * $tab-margin;
+    }
+
+    margin-bottom: 0.5* $tab-margin;
+  }
+
+  &__latest {
+    margin-bottom: $tab-margin;
+  }
+}

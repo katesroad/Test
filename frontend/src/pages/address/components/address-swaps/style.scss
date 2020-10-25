@@ -1,0 +1,7 @@
+.address__swaps {
+  .q-table td {
+    &:last-child {
+      display: none;
+    }
+  }
+}

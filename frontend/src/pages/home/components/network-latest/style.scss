@@ -1,0 +1,86 @@
+@import '@/css/quasar.variables.scss';
+
+.home__latest {
+  display: flex;
+  color: #353535;
+
+  .scroll {
+    overflow: unset;
+  }
+
+  span {
+    &:first-child {
+      margin-right: 6px;
+
+    }
+
+    &.field-key {
+      color: #4f4f4f;
+    }
+
+    .v-time-ago__text {
+      text-align: left;
+      font-size: 12px;
+
+    }
+  }
+
+  .item-icon {
+    margin-right: 12px;
+    max-width: 32px;
+  }
+
+  .tx-info {
+    max-height: 30px;
+  }
+
+
+  .q-table {
+    td {
+      padding: 12px auto;
+
+      &:last-child {
+        display: none;
+
+        @media screen and(min-width:540px) {
+          display: table-cell;
+        }
+      }
+    }
+
+    tr {
+      height: 56px;
+    }
+
+    thead {
+      display: none;
+    }
+  }
+
+
+  @media screen and(min-width: 569px) {
+    th:last-child {
+      display: table-cell;
+    }
+
+    td:last-child {
+      display: table-cell;
+    }
+  }
+
+  .latest-blocks {
+    margin-bottom: $tab-margin;
+
+    @media screen and(min-width: 1024px) {
+      margin-left: .75rem;
+    }
+  }
+
+  .latest-txs {
+    margin-bottom: $tab-margin;
+
+    @media screen and(min-width: 1024px) {
+      margin-right: .75rem;
+    }
+  }
+}

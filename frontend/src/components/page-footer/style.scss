@@ -1,0 +1,67 @@
+@import '@/css/quasar.variables.scss';
+
+.q-footer {
+  word-break: break-all;
+  background-color: #071C4F;
+  color: hsla(0, 0%, 100%, .7);
+
+  .footer-ctn {
+    max-width: $content-width;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .site-intro {
+    padding-top: 48px;
+    padding-bottom: 24px;
+    word-break: break-word;
+
+    h6 {
+      margin-bottom: 16px;
+      margin-top: 0;
+    }
+
+    @media screen and (min-width: 768px) {
+      display: flex;
+      justify-content: space-between;
+    }
+
+    &__fsn {
+      @media screen and (min-width: 768px) {
+        width: 50%;
+        max-width: 410px;
+      }
+    }
+
+    &__about {
+      width: 220px;
+    }
+  }
+
+  .line {
+    max-width: $content-width;
+    margin-left: auto;
+    margin-right: auto;
+
+    span {
+      display: block;
+      max-width: 100%;
+      margin: 0 16px;
+      height: 1px;
+      background-color: #fefefe;
+      transform: scaleY(.25);
+    }
+  }
+
+  .copyright {
+    padding-top: 16px;
+    display: flex;
+    justify-content: space-between;
+
+    a:first-child {
+      margin-right: 1rem;
+    }
+  }
+}

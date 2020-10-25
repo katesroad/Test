@@ -1,0 +1,36 @@
+.page {
+  &-header {
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+
+    strong {
+      font-size: 20px;
+    }
+
+    .is-hash {
+      display: block;
+      word-break: break-all;
+      max-width: 240px;
+
+      @media screen and(min-width: 768px) {
+        max-width: none;
+      }
+    }
+
+    .item-label {
+      margin-left: 4px;
+      color: #fff;
+      background-color: #30ccdb;
+      padding: 4px 6px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+  }
+
+  &-icon {
+    width: 48px;
+    margin-right: 12px;
+  }
+}
