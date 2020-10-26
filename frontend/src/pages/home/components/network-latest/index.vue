@@ -17,7 +17,7 @@ export default {
   name: "home-latest",
   computed: {
     txs() {
-      return this.$store.state.l6txs;
+      return this.$store.state.l6txs || [];
     },
     bks() {
       return this.$store.state.l6bks || []

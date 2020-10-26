@@ -10,7 +10,7 @@
         <q-tab name="txs" label="Transactions" no-ripple v-if="hasTxs" />
         <q-tab
           name="fusion-tokens"
-          label="Fusion Tokens"
+          label="Native Tokens"
           no-ripple
           v-if="hasFusionTokens"
         />
