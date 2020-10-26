@@ -1,10 +1,10 @@
 import Vue from "vue";
-import Vuex from "vuex";
 import VueSocketIO from "vue-socket.io";
+import Vuex from "vuex";
 import { utils } from "../boot/utils";
-import { TRANSACTION_TYPES } from "./tx-types";
-import * as ROW_OPTIONS_FOR_PAGE from "./row-options";
 import { ADDRESS_NAMES } from "./address-names";
+import * as ROW_OPTIONS_FOR_PAGE from "./row-options";
+import { TRANSACTION_TYPES } from "./tx-types";
 
 Vue.use(Vuex);
 
@@ -16,11 +16,11 @@ const store = new Vuex.Store({
     TRANSACTION_TYPES,
     latestBlock: {},
     l6txs: [],
+    l6bks: [],
     mcap: { price: 0.46 },
     txCount: { all: 3137778, anyswap: 0 },
     txProgress: 0,
-    l6bks: [],
-    ROW_OPTIONS_FOR_PAGE
+    ROW_OPTIONS_FOR_PAGE,
   },
   mutations: {
     network(state, payload) {
@@ -32,14 +32,8 @@ const store = new Vuex.Store({
     verifiedTokens(state, payload) {
       state.verifiedTokens = payload;
     },
-    latestBlock(state, payload) {
-      state.latestBlock = payload;
-    },
     l6txs(state, payload) {
-      let txs;
-      if (payload.length) txs = payload;
-      else txs = payload.txs || [];
-      const newTxs = [...txs, ...state.l6txs];
+      const newTxs = [...payload, ...state.l6txs];
       state.l6txs = newTxs.slice(0, 6);
     },
     mcap(state, payload) {
@@ -52,9 +46,8 @@ const store = new Vuex.Store({
       state.txProgress = payload;
     },
     l6bks(state, payload) {
-      const { bks } = payload;
-      state.l6bks = bks;
-    }
+      state.l6bks = payload;
+    },
   },
   actions: {
     ["setnetwork"]({ commit }, payload) {
@@ -67,12 +60,35 @@ const store = new Vuex.Store({
         utils.setNetwork(payload);
       }
     },
-    ["setnetwork:block"]({ commit }, payload) {
-      commit("latestBlock", payload);
+    ["setnetwork:block"](context, payload) {
+      const { state, dispatch} = context;
+      let { l6bks = [] } = state;
+      if(l6bks.length==0) {
+        l6bks = utils.getL6Bks() || [];
+      }
+      const firstBk = l6bks[0] || payload;
+      const newBks = [...l6bks];
+      if(firstBk.height === payload.height) {
+        newBks[0] = payload
+      } else {
+        newBks.unshift(payload);
+      }
+      dispatch({
+        type: 'setnetwork:l6bks',
+        bks: newBks.slice(0, 6)
+      })
     },
     ["setnetwork:l6txs"]({ commit }, payload) {
-      commit("l6txs", payload);
-      utils.setL6Txs(payload);
+      let { type, txs = [] } = payload;
+      if (!type) txs = payload;
+      commit("l6txs", txs);
+      utils.setL6Txs(txs);
+    },
+    ["setnetwork:l6bks"]({ commit }, payload) {
+      let { type, bks = [] } = payload;
+      if (!type) bks = payload;
+      commit("l6bks", bks);
+      utils.setL6Bks(bks);
     },
     ["settx:count"]({ commit }, payload) {
       commit("txCount", payload);
@@ -81,22 +97,13 @@ const store = new Vuex.Store({
       commit("mcap", payload);
       utils.setMcap(payload);
     },
-    setl6bks({ commit }, payload) {
-      const { bks = [] } = payload;
-      if (bks.length) {
-        utils.setL6Bks(bks);
-      } else {
-        utils.setL6Bks(payload);
-      }
-      commit("l6bks", payload);
-    },
     setAddressNames({ commit }, { names = {} }) {
       commit("addressNames", names);
     },
     setVerifiedTokens({ commit }, { tokens = {} }) {
       commit("verifiedTokens", tokens);
-    }
-  }
+    },
+  },
 });
 
 Vue.use(
@@ -106,12 +113,12 @@ Vue.use(
     vuex: {
       store,
       actionPrefix: "set",
-      mutationPrefix: "set"
-    }
+      mutationPrefix: "set",
+    },
   })
 );
 
 // https://quasar.dev/quasar-cli/vuex-store#Adding-a-Vuex-Module.
-export default function() {
+export default function () {
   return store;
 }

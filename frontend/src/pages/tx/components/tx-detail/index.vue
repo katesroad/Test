@@ -1,5 +1,6 @@
 <template>
   <q-card class="tx__detail info-card" v-if="tx.hash">
+    {{tx}}
     <div class="row">
       <div class="page-header">
         <img src="svg/tx.svg" alt="" class="page-icon" />
