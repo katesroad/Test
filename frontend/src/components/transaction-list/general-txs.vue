@@ -128,12 +128,6 @@ export default {
     },
     token() {
       this.resetPaginationParams();
-      if (this.acnhor) {
-        this.statsAnchor = {
-          first: +this.anchor.first,
-          last: +this.acnhor.last
-        };
-      }
       this.onRequest({
         pagination: this.pagination
       });
