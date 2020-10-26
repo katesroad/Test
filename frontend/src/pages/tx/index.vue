@@ -19,7 +19,7 @@ export default {
   data() {
     return {
       tx: {},
-      loading: false
+      loading: false,
     };
   },
   computed: {
@@ -28,6 +28,7 @@ export default {
     },
     isErc20Tx() {
       const { data = {} } = this.tx;
+      if (this.tx.type === -2 || this.tx.type === "BuyTicketFunc") return false;
       if (data.from || data.token.length === 42) return true;
       else return false;
     },
@@ -37,17 +38,17 @@ export default {
     contractDetail() {
       const { data = {} } = this.tx;
       return data;
-    }
+    },
   },
   watch: {
     hash() {
       this.loadData();
-    }
+    },
   },
   components: {
     TxDetail,
     ContractDetail,
-    SwapDetail
+    SwapDetail,
   },
   created() {
     this.loadData();
@@ -57,12 +58,13 @@ export default {
       this.loading = true;
       await this.$axios
         .get(`/tx/${this.hash}`)
-        .then(tx => {
-          this.tx = tx;
+        .then((tx) => {
+          const { data = {}, ...others } = tx;
+          this.tx = { ...others, data };
         })
-        .catch(e => ({}));
+        .catch((e) => ({}));
       this.loading = false;
-    }
-  }
+    },
+  },
 };
 </script>
