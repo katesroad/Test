@@ -116,7 +116,7 @@ create table tx_token (
   foreign key (tx) references txs(id),
   foreign key (token) references tokens(hash)
 );
-create index idx_tx_token on tx_token(token, id desc);
+create index idx_tx_token on tx_token(token, tx desc);
 
 drop table if exists anyswap;
 create table anyswap(
