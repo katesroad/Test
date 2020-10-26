@@ -39,8 +39,7 @@ export class HelperService extends CustomLogger {
   }
 
   updateNetworkState(number: any): void {
-    // this.setNetworkHeight(number);
-    this.setNetworkHeight(2880981);
+    this.setNetworkHeight(number);
     this.mongo.getBlocktime(number).then(time => this.setBlockTime(time));
     this.rpc.getStakingStats().then(stats => this.storeStakingStats(stats));
   }
