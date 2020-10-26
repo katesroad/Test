@@ -29,7 +29,7 @@ export default {
     isErc20Tx() {
       const { data = {} } = this.tx;
       if (this.tx.type === -2 || this.tx.type === "BuyTicketFunc") return false;
-      if (data.from || data.token.length === 42) return true;
+      if (data.from || data.token && data.token.length === 42) return true;
       else return false;
     },
     isFsnSwap() {

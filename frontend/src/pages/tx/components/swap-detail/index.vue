@@ -1,6 +1,12 @@
 <template>
-  <q-card class="fsn-swap-detail">
-    <span class="card-tit">Swap Detail</span>
+  <q-card class="fsn-swap-detail" style="padding: 0 16px 32px 16px">
+     <q-card-section style="padding-left: 0">
+      <div class="text-h6 row justify-start items-center">
+        Swap Detail
+      </div>
+    </q-card-section>
+    <h6>This module is under construction.</h6>
+    {{data}}
   </q-card>
 </template>
 
