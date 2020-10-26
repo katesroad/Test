@@ -8,7 +8,7 @@ import 'vue-json-pretty/lib/styles.css'
 export default {
   name: "contract-logs",
   props: {
-    data: Object,
+    data: [Object, Array],
   },
   components:  {
     VueJsonPretty: () => import('vue-json-pretty')
