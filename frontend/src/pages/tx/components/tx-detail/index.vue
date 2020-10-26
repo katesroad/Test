@@ -26,7 +26,7 @@
               v-if="tx.timestamp"
               />
           </key-value>
-          <key-value prop="from" v-if="txFrom">
+          <key-value :prop="fromText" v-if="txFrom">
             <fusion-hash
               :hash="txFrom"
               prefix="address"
@@ -60,8 +60,8 @@
               <fusion-hash :hash="tx.data.contract" prefix="contract" />
             </div>
           </key-value>
-          <key-value v-if="isTicketTx" prop="Miner">
-            <fusion-hash prefix="address" :hash="tx.log.TicketOwner" />
+          <key-value v-if="isTicketTx" prop="Ticket ID">
+            {{tx.log.TicketID}}
           </key-value>
           <key-value prop="Duration" v-if="isTlTransfer || isTicketTx">
             <fsn365-datetime :timestamp="tx.data.startTime || tx.log.StartTime" />
@@ -223,6 +223,10 @@ export default {
     },
     useTransactionInfo() {
       return !this.isTicketTx && !this.isErc20TokenCreation&&!this.isErc20TokenCreation;
+    },
+    fromText () {
+      if(this.isTicketTx) return 'From Miner';
+      else return 'From'
     }
   },
   components: {
