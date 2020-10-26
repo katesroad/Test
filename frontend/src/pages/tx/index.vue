@@ -5,14 +5,12 @@
     </q-inner-loading>
     <tx-detail :tx="tx" />
     <contract-detail v-if="isErc20Tx" :tx="tx" />
-    <swap-detail v-if="isFsnSwap" :hash="tx.data.swap" />
   </div>
 </template>
 
 <script>
 import TxDetail from "./components/tx-detail";
 import ContractDetail from "./components/contract-detail";
-import SwapDetail from "./components/swap-detail";
 
 export default {
   name: "tx",
@@ -48,7 +46,6 @@ export default {
   components: {
     TxDetail,
     ContractDetail,
-    SwapDetail,
   },
   created() {
     this.loadData();
