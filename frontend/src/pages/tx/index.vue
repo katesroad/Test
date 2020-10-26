@@ -1,5 +1,5 @@
 <template>
-  <div class="tx" v-if="tx.type">
+  <div class="tx" v-if="tx.type!==undefined">
     <q-inner-loading :showing="loading">
       <q-spinner-gears size="50px" color="primary" />
     </q-inner-loading>
