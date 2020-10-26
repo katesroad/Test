@@ -20,7 +20,7 @@ export default {
       return this.$store.state.l6txs;
     },
     bks() {
-      return this.$store.state.l6bks;
+      return this.$store.state.l6bks || []
     },
   },
   components: {
