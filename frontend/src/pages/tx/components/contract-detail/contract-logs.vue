@@ -1,17 +1,10 @@
 <template>
   <div class="contract-logs">
-    <key-value prop="logs">
-      <ul>
-        <li v-for="(item, i) in logs" :key="i">
-          <span>{{ item }} </span>
-        </li>
-      </ul>
-    </key-value>
+    <json-pretty :data="logs" />
   </div>
 </template>
 
 <script>
-import KeyValue from "@/components/key-value";
 
 export default {
   name: "contract-logs",
@@ -19,7 +12,7 @@ export default {
     logs: Array
   },
   components: {
-    KeyValue
+    JsonPretty: () => import('@/components/json-pretty')
   }
 };
 </script>
