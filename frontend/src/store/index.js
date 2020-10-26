@@ -1,10 +1,10 @@
 import Vue from "vue";
-import Vuex from "vuex";
 import VueSocketIO from "vue-socket.io";
+import Vuex from "vuex";
 import { utils } from "../boot/utils";
-import { TRANSACTION_TYPES } from "./tx-types";
-import * as ROW_OPTIONS_FOR_PAGE from "./row-options";
 import { ADDRESS_NAMES } from "./address-names";
+import * as ROW_OPTIONS_FOR_PAGE from "./row-options";
+import { TRANSACTION_TYPES } from "./tx-types";
 
 Vue.use(Vuex);
 
@@ -19,7 +19,6 @@ const store = new Vuex.Store({
     mcap: { price: 0.46 },
     txCount: { all: 3137778, anyswap: 0 },
     txProgress: 0,
-    l6bks: [],
     ROW_OPTIONS_FOR_PAGE
   },
   mutations: {
@@ -36,10 +35,7 @@ const store = new Vuex.Store({
       state.latestBlock = payload;
     },
     l6txs(state, payload) {
-      let txs;
-      if (payload.length) txs = payload;
-      else txs = payload.txs || [];
-      const newTxs = [...txs, ...state.l6txs];
+      const newTxs = [...payload, ...state.l6txs];
       state.l6txs = newTxs.slice(0, 6);
     },
     mcap(state, payload) {
@@ -52,8 +48,7 @@ const store = new Vuex.Store({
       state.txProgress = payload;
     },
     l6bks(state, payload) {
-      const { bks } = payload;
-      state.l6bks = bks;
+      state.l6bks = payload;
     }
   },
   actions: {
@@ -71,8 +66,10 @@ const store = new Vuex.Store({
       commit("latestBlock", payload);
     },
     ["setnetwork:l6txs"]({ commit }, payload) {
-      commit("l6txs", payload);
-      utils.setL6Txs(payload);
+      let {type, txs = []} = payload;
+      if(!type) txs = payload; 
+      commit("l6txs", txs);
+      utils.setL6Txs(txs);
     },
     ["settx:count"]({ commit }, payload) {
       commit("txCount", payload);
@@ -80,15 +77,6 @@ const store = new Vuex.Store({
     ["setmcap"]({ commit }, payload) {
       commit("mcap", payload);
       utils.setMcap(payload);
-    },
-    setl6bks({ commit }, payload) {
-      const { bks = [] } = payload;
-      if (bks.length) {
-        utils.setL6Bks(bks);
-      } else {
-        utils.setL6Bks(payload);
-      }
-      commit("l6bks", payload);
     },
     setAddressNames({ commit }, { names = {} }) {
       commit("addressNames", names);
