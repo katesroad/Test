@@ -39,7 +39,7 @@ as
     left join
     tokens
     on 
-  erc20.hash = address_erc20_tokens.token;
+  tokens.hash = address_erc20_tokens.token;
 
 -- address overview
 drop view if exists address_overview_view;
@@ -72,6 +72,5 @@ as
   select
     hash, symbol, qty, txs, holders,
     count(id) over() as total
-  from erc20;
-
-
+  from tokens
+  where token_type=1;
