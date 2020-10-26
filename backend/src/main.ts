@@ -9,25 +9,24 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.useGlobalInterceptors(new ResponseInterceptor());
-  app.useGlobalFilters(new CatchAllFilter());
+
+  app.use(
+    rateLimit({
+      windowMs: 1 * 1000,
+      max: 10,
+    }),
+  );
 
   const config = app.get(ConfigService);
+  app.enableCors(config.get('cors'));
+
+  app.useGlobalInterceptors(new ResponseInterceptor());
+  app.useGlobalFilters(new CatchAllFilter());
 
   // Hybrid app to get websocket data
   app.connectMicroservice<MicroserviceOptions>(config.get('service:web3'));
   app.connectMicroservice<MicroserviceOptions>(config.get('service:tcp'));
   await app.startAllMicroservicesAsync();
-
-  app.use(rateLimit({
-    windowMs: 1 * 1000,
-    max: 10
-  }));
-
-  app.enableCors({
-    origin: 'https://fsn365.netlify.app',
-    optionsSuccessStatus: 200
-  })
 
   const { port = 8080, name } = config.get('app');
 

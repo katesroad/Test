@@ -35,6 +35,11 @@ export const config = () => ({
     port: +process.env['server_port'] || 3800,
   },
 
+  cors: {
+    origin: process.env.cors_domain,
+    optionsSuccessStatus: 204,
+  },
+
   redis: {
     name: 'server',
     host: process.env.redis_host || 'localhost',
