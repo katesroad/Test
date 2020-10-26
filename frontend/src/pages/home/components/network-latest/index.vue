@@ -29,7 +29,6 @@ export default {
   watch: {
     latestBlock() {
       let newBks = [...this.bks];
-      console.log(JSON.stringify(this.latestBlock));
       const firstBlock = newBks[0] || this.latestBlock;
       const latestBlock = this.latestBlock;
       if (firstBlock.height !== latestBlock.height) {

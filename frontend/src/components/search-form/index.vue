@@ -53,7 +53,7 @@ export default {
           return this.$$router.push(`address/${address.hash}`);
         }
         else {
-          this.$router.push(`/block/${keyword}`);
+          return this.$router.push(`/block/${keyword}`);
         }
       }
 
