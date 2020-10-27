@@ -16,9 +16,9 @@ some reasons:
 Also, the transaction count of an address/token might not be accurate, neither as the current version has not touched the reliability of the RabbitMQ part yet. For more information about RabbitMQ reliability, please refer to [https://www.rabbitmq.com/reliability.html](https://www.rabbitmq.com/reliability.html).
 
 The lowest specs for running services is
-- 4 CPU
-- 8 GB memory
-- 160 GB SSD storage.
+- 6 CPU
+- 16 GB memory
+- 320 GB SSD storage.
 
 Also, you can use the RDS provider for PostgreSQL, MongoDB, and RabbitMQ to enhance the accuracy and stability, if you have no idea how to config them locally on your VPS.
 
