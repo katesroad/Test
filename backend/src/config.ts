@@ -37,7 +37,7 @@ export const config = () => ({
   },
 
   cors: {
-    origin: process.env.cors_domain,
+    origin: [process.env.cors_domain],
     optionsSuccessStatus: 204,
   },
 
