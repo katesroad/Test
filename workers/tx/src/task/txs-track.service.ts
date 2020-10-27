@@ -70,10 +70,10 @@ export class TxsTrackService extends CustomLogger {
     this.workerClient.notifyTxDecodingProgress({ block: range.$lte });
     if (txs.length) {
       this.workerClient.notifyL6Txs(txs);
+      this.workerClient.notifyBalancesChangeByTxs(txs);
       const pgSavedResult = await this.pg.saveProcessedTxs(txs);
       const { txsIsSaved, txsCount } = pgSavedResult;
       if (txsIsSaved) {
-        this.workerClient.notifyBalancesChangeByTxs(txs);
         prevTrackAt = syncHeight;
         await this.notificationService.makeStatsForTxs(txs);
         this.workerClient.notifyTxStats({ txs: txsCount });
