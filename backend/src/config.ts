@@ -1,3 +1,4 @@
+import { Transport } from '@nestjs/microservices';
 import { Web3Server } from './services';
 
 export const config = () => ({
@@ -52,4 +53,11 @@ export const config = () => ({
   ['service:web3']: {
     strategy: new Web3Server(process.env.wss_url),
   },
+
+  ['service:tcp']: {
+    transport: Transport.TCP,
+    options: {
+      port: +process.env.tcp_port
+    }
+  }
 });

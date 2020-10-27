@@ -28,7 +28,7 @@
           </p>
           <token-txs :token="hash" :txs="token.txs" />
         </q-tab-panel>
-        <q-tab-panel name="holders" v-if="token.holders">
+        <q-tab-panel name="holders" v-if="token.holders && tab==='holders'">
           <token-holders
             :hash="hash"
             :token-symbol="token.symbol"
@@ -44,7 +44,6 @@
 <script>
 import TokenTxs from "@/components/transaction-list";
 import TokenInfo from "./components/token-info";
-import TokenHolders from "./components/token-holders";
 
 export default {
   name: "token-detail",
@@ -81,8 +80,8 @@ export default {
   },
   components: {
     TokenInfo,
-    TokenHolders,
-    TokenTxs
+    TokenTxs,
+    TokenHolders:() => import("./components/token-holders")
   },
   created() {
     this.loadData();

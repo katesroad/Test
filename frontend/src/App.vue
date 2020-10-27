@@ -8,25 +8,6 @@ export default {
   name: "App",
   created() {
     this.loadAddressNames();
-    const l6Txs = this.$utils.getL6Txs();
-    this.$store.dispatch({
-      type: "setnetwork:l6txs",
-      l6Txs
-    });
-
-    const lBks = this.$utils.getL6Bks();
-    this.$store.dispatch({
-      type: "setl6bks",
-      bks: lBks
-    });
-
-    const network = this.$utils.getNetwork();
-    if (network) {
-      this.$store.dispatch({
-        type: "setnetwork",
-        network
-      });
-    }
   },
   methods: {
     async loadAddressNames() {

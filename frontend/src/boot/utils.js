@@ -24,7 +24,7 @@ export const utils = {
     storeToLocalStorage("l6txs", txs);
   },
   getL6Txs() {
-    return getLocalStorage("l6txs");
+    return getLocalStorage("l6txs") || [];
   },
   setMcap(mcap) {
     storeToLocalStorage("mcap", mcap);
@@ -36,7 +36,7 @@ export const utils = {
     storeToLocalStorage('l6bks', bks);
   },
   getL6Bks() {
-    return getLocalStorage("l6bks");
+    return getLocalStorage("l6bks") || [];
   },
   calcQty(value) {
     const oneM = 1000000;

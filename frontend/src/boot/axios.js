@@ -1,6 +1,6 @@
 import axios from "axios";
 
-axios.defaults.baseURL = "http://192.168.0.117:3800";
+axios.defaults.baseURL = "https://fsn365.katecc.com";
 axios.defaults.headers.post["Content-Type"] = "application/json";
 
 axios.interceptors.request.use(config => {

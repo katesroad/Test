@@ -8,7 +8,7 @@
 }
 </style>
 <template>
-  <q-card class="tx__contract-detail" style="padding: 16px">
+  <q-card class="tx__contract-detail" style="padding: 0 16px 32px">
     <q-card-section style="padding-left: 0">
       <div class="text-h6 row justify-start items-center">
         Contract Detail

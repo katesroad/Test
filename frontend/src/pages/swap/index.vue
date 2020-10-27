@@ -1,15 +1,14 @@
 <template>
-  <q-card class="fusion-swap row items-center">
-    <h6 class="justify-center row items-center col-12">
-      This page is under construction
+  <q-card class="fusion-swap row items-center" style="padding: 16px">
+    <h6 class="row items-center col-12" style="margin:0">
+      Swap Detail
     </h6>
-    <div style="padding: 16px 32px;">
-      {{ data }}
-    </div>
+    <json-pretty :data="data" />
   </q-card>
 </template>
 
 <script>
+
 export default {
   name: "fusion-swap",
   data() {
@@ -21,6 +20,9 @@ export default {
     hash() {
       this.loadData(this.$route.params.hash);
     }
+  },
+  components: {
+    JsonPretty: () => import('@/components/json-pretty')
   },
   created() {
     this.loadData(this.$route.params.hash);

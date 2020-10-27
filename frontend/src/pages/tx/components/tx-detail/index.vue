@@ -6,7 +6,7 @@
         <div class="tx-hash">
           <strong
             >Transaction
-            <small class="item-label">{{ typeText }}</small>
+          <small class="item-label">{{ typeText }}</small>
           </strong>
           <div>
             <span class="is-hash">{{ tx.hash }}</span>
@@ -24,15 +24,15 @@
               :datetime="tx.timestamp * 1000"
               long
               v-if="tx.timestamp"
-            />
+              />
           </key-value>
-          <key-value prop="from" v-if="txFrom">
+          <key-value :prop="fromText" v-if="txFrom">
             <fusion-hash
               :hash="txFrom"
               prefix="address"
               :use-abbrev="false"
               class="ellipsis"
-            />
+              />
           </key-value>
           <key-value prop="to" v-if="txTo">
             <fusion-hash
@@ -40,14 +40,14 @@
               prefix="address"
               :use-abbrev="false"
               class="ellipsis"
-            />
+              />
           </key-value>
-          <key-value prop="Tx Summary" v-if="tx.hash">
+          <key-value prop="Tx Summary" v-if="tx.hash && !isTicketTx">
             <transaction-info
               :tx="tx"
-              v-if="!isErc20TokenCreation && !isContractCreation"
+              v-if="useTransactionInfo"
               style="min-width: 150px"
-            />
+              />
             <div v-if="isErc20TokenCreation">
               Issued
               {{ tx.data.value }}
@@ -60,10 +60,13 @@
               <fusion-hash :hash="tx.data.contract" prefix="contract" />
             </div>
           </key-value>
-          <key-value prop="Duration" v-if="isTlTransfer">
-            <fsn365-datetime :timestamp="tx.data.startTime" />
+          <key-value v-if="isTicketTx" prop="Ticket ID">
+            {{tx.log.TicketID}}
+          </key-value>
+          <key-value prop="Duration" v-if="isTlTransfer || isTicketTx">
+            <fsn365-datetime :timestamp="tx.data.startTime || tx.log.StartTime" />
             ~
-            <fsn365-datetime :timestamp="tx.data.endTime" />
+            <fsn365-datetime :timestamp="tx.data.endTime || tx.log.ExpireTime" />
             (UTC)
           </key-value>
         </div>
@@ -76,7 +79,7 @@
             </router-link>
             <small v-if="networkHeight" class="confirmation-text"
               >({{ confirmationText }})</small
-            >
+              >
           </key-value>
           <key-value prop="Tx Fee" :value="fee" />
           <key-value prop="Gas Used" :value="tx.gasUsed" />
@@ -87,7 +90,7 @@
             :value="tx.input"
             :ellipsis="true"
             :view-more="true"
-          />
+            />
         </div>
       </div>
     </div>
@@ -100,7 +103,6 @@
         <q-card-section class="q-pt-none">
           {{ tx.input }}
         </q-card-section>
-
         <q-card-actions align="right">
           <q-btn flat label="OK" color="primary" v-close-popup />
         </q-card-actions>
@@ -202,7 +204,10 @@ export default {
       return [4, 5, 6].includes(txType);
     },
     isTlTransfer() {
-      return !!this.tx.data.startTime;
+      return this.tx.type ===3
+    },
+    isTransfer() {
+      return  this.tx.type ===2;
     },
     isErc20TokenCreation() {
       const { type, data = {} } = this.tx;
@@ -211,6 +216,17 @@ export default {
     isContractCreation() {
       const { type, data = {} } = this.tx;
       return type === 12 && data.symbol === undefined;
+    },
+    isTicketTx() {
+      const { log = {} } = this.tx;
+      return !!log.TicketOwner
+    },
+    useTransactionInfo() {
+      return !this.isTicketTx && !this.isErc20TokenCreation&&!this.isErc20TokenCreation;
+    },
+    fromText () {
+      if(this.isTicketTx) return 'From Miner';
+      else return 'From'
     }
   },
   components: {

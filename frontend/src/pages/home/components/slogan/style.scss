@@ -1,11 +1,11 @@
 .home__slogan {
-  margin-top: -2.5rem;
 
   .slogan-title {
     text-align: center;
     font-size: 24px;
     font-weight: 700;
     color: #091841;
+    margin-top: -2.5rem;
 
     @media screen and (min-width: 1024px) {
       margin-top: 1.8vh;
@@ -18,7 +18,7 @@
     }
 
     @media screen and (min-width: 1600px) {
-      margin-top: 2.6vh;
+      margin-top: 3vh;
       font-size: 48px;
     }
   }

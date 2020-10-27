@@ -17,30 +17,11 @@ export default {
   name: "home-latest",
   computed: {
     txs() {
-      return this.$store.state.l6txs;
-    },
-    latestBlock() {
-      return this.$store.state.latestBlock;
+      return this.$store.state.l6txs || [];
     },
     bks() {
-      return this.$store.state.l6bks;
-    }
-  },
-  watch: {
-    latestBlock() {
-      let newBks = [...this.bks];
-      const firstBlock = newBks[0];
-      const latestBlock = this.latestBlock;
-      if (firstBlock.height !== latestBlock.height) {
-        newBks = [latestBlock].concat(newBks).slice(0, 6);
-      } else {
-        newBks[0] = this.latestBlock;
-      }
-      this.$store.dispatch({
-        type: "setl6bks",
-        bks: newBks
-      });
-    }
+      return this.$store.state.l6bks || []
+    },
   },
   components: {
     Blocks,
@@ -50,20 +31,24 @@ export default {
     this.loadData();
   },
   methods: {
-    loadData() {
+    async loadData() {
       if (this.bks.length * this.txs.length !== 0) return;
-      this.$axios.get("/network/latest").then(data => {
-        const { txs, bks } = data;
-        this.$store.dispatch({
-          type: "setnetwork:l6txs",
-          txs
-        });
-        this.$store.dispatch({
-          type: "setl6bks",
-          bks
-        });
+      let {txs = [], bks = []} = await this.$axios.get("/network/latest");
+      if(txs.length===0) { 
+        txs = this.$utils.getL6Txs()
+      }
+      if(bks.length===0) { 
+        bks = this.$utils.getL6Bks()
+      }
+      this.$store.dispatch({
+        type: "setnetwork:l6txs",
+        txs
       });
-    }
+      this.$store.dispatch({
+        type: "setnetwork:l6bks",
+        bks
+      });
+    },
   }
 };
 </script>

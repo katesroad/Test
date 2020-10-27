@@ -1,25 +1,23 @@
 <template>
-  <div class="tx" v-if="tx.type">
+  <div class="tx" v-if="tx.type!==undefined">
     <q-inner-loading :showing="loading">
       <q-spinner-gears size="50px" color="primary" />
     </q-inner-loading>
     <tx-detail :tx="tx" />
     <contract-detail v-if="isErc20Tx" :tx="tx" />
-    <swap-detail v-if="isFsnSwap" :hash="tx.data.swap" />
   </div>
 </template>
 
 <script>
 import TxDetail from "./components/tx-detail";
 import ContractDetail from "./components/contract-detail";
-import SwapDetail from "./components/swap-detail";
 
 export default {
   name: "tx",
   data() {
     return {
       tx: {},
-      loading: false
+      loading: false,
     };
   },
   computed: {
@@ -28,7 +26,8 @@ export default {
     },
     isErc20Tx() {
       const { data = {} } = this.tx;
-      if (data.from || data.token.length === 42) return true;
+      if (this.tx.type === -2 || this.tx.type === "BuyTicketFunc") return false;
+      if (data.from || data.token && data.token.length === 42) return true;
       else return false;
     },
     isFsnSwap() {
@@ -37,17 +36,16 @@ export default {
     contractDetail() {
       const { data = {} } = this.tx;
       return data;
-    }
+    },
   },
   watch: {
     hash() {
       this.loadData();
-    }
+    },
   },
   components: {
     TxDetail,
     ContractDetail,
-    SwapDetail
   },
   created() {
     this.loadData();
@@ -57,12 +55,13 @@ export default {
       this.loading = true;
       await this.$axios
         .get(`/tx/${this.hash}`)
-        .then(tx => {
-          this.tx = tx;
+        .then((tx) => {
+          const { data = {}, ...others } = tx;
+          this.tx = { ...others, data };
         })
-        .catch(e => ({}));
+        .catch((e) => ({}));
       this.loading = false;
-    }
-  }
+    },
+  },
 };
 </script>
