@@ -157,13 +157,14 @@ export abstract class TxProcessor {
     }
 
     if (erc20Receipts) {
-      const { erc20, value } = erc20Receipts[0];
-      const tokenSnapshot = await tokenService.getTokenSnapshot(erc20);
-      const { symbol, precision } = tokenSnapshot;
-      const qty = +value / Math.pow(10, precision);
-
-      data = { value: qty, token: erc20, symbol };
-      tokens.push(erc20);
+      try {
+        const { erc20, value } = erc20Receipts[0];
+        const tokenSnapshot = await tokenService.getTokenSnapshot(erc20);
+        const { symbol, precision } = tokenSnapshot;
+        const qty = +value / Math.pow(10, precision);
+        data = { value: qty, token: erc20, symbol };
+        tokens.push(erc20);
+      } catch {}
     }
 
     return { tokens, data };
