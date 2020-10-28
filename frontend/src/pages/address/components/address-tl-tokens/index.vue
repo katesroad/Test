@@ -115,10 +115,7 @@ export default {
       this.data = balances;
     },
     getTokensSnapshots(tokens) {
-      return this.$axios.post("/token/snapshots", tokens).then((data) => {
-        console.log(data);
-        return data;
-      });
+      return this.$axios.post("/token/snapshots", tokens).catch(e => ({}));
     },
     calcQty(qty) {
       return this.$utils.calcQty(qty);
