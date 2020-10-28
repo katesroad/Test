@@ -30,16 +30,13 @@ export class WorkerClientService {
     const balanceList = miners.map(miner => {
       return { address: miner, tokens: [FSN_TOKEN] };
     });
-    console.log(miners.length);
     this.notify('address', {
       pattern: 'address',
       data: addressList,
     });
-
     this.notify('balance', {
       pattern: 'balance',
       data: balanceList,
     });
-    process.exit();
   }
 }
