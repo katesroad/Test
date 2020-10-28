@@ -73,11 +73,7 @@
                   />
                 </div>
                 <div class="row justify-start">
-                  <span>
-                    <router-link :to="{ path: `/block/${props.row.height}` }">
-                      {{ props.row.txs }} txs
-                    </router-link>
-                  </span>
+                   <span style="margin-right:4px">{{ props.row.txs }}  txs</span>
                   <span class="field-key">In block</span>
                 </div>
               </div>

@@ -48,8 +48,8 @@
         <q-tab-panel name="erc20-tokens" v-if="hasErc20Tokens &&tab==='erc20-tokens'">
           <address-erc20s :hash="hash" />
         </q-tab-panel>
-        <q-tab-panel name="tl-tokens" v-if="hasTlTokens &&tab==='tl-tokens'">
-          <address-tl-tokens :hash="hash" />
+        <q-tab-panel name="tl-tokens" v-if="hasTlTokens &&tab==='tl-tokens' && overview.hash">
+          <address-tl-tokens :hash="overview.hash" />
         </q-tab-panel>
         <q-tab-panel name="native-swaps" v-if="hasNativeSwaps &&tab==='native-swaps'">
           <address-swaps :hash="hash" />

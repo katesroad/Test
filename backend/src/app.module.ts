@@ -1,13 +1,12 @@
-import * as redisStore from 'cache-manager-redis-store';
-import { Module, CacheModule, CacheInterceptor } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { CacheInterceptor, CacheModule, Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import * as redisStore from 'cache-manager-redis-store';
 import { ApiModule } from './api/api.module';
-import { config } from './config';
-import { SharedModule } from './shared';
 import { AppController } from './app.controller';
 import { AppGateway } from './app.gateway';
-import { DbModule } from './db/db.module';
+import { config } from './config';
+import { SharedModule } from './shared';
 
 @Module({
   imports: [
@@ -25,7 +24,6 @@ import { DbModule } from './db/db.module';
     }),
     SharedModule,
     ApiModule,
-    DbModule,
   ],
   providers: [
     {
@@ -36,4 +34,4 @@ import { DbModule } from './db/db.module';
   ],
   controllers: [AppController],
 })
-export class AppModule {}
+export class AppModule { }
