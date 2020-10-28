@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { AddressClientService } from './address-client.service';
 import { BalanceClientService } from './balance-client.service';
 import { ClientMsg, FSN_TOKEN } from '../models';
-import { from } from 'rxjs';
 
 @Injectable()
 export class WorkerClientService {
@@ -25,22 +24,22 @@ export class WorkerClientService {
   }
 
   updateMinersInfo(miners: string[]): void {
-    from(miners).subscribe(miner => {
-      this.notify('address', {
-        pattern: 'address',
-        data: {
-          address: miner,
-          miner: true,
-        },
-      });
-
-      this.notify('balance', {
-        pattern: 'balance',
-        data: {
-          s: miner,
-          tokens: [FSN_TOKEN],
-        },
-      });
+    const addressList = miners.map(miner => {
+      return { address: miner, miner: true };
     });
+    const balanceList = miners.map(miner => {
+      return { address: miner, tokens: [FSN_TOKEN] };
+    });
+    console.log(miners.length);
+    this.notify('address', {
+      pattern: 'address',
+      data: addressList,
+    });
+
+    this.notify('balance', {
+      pattern: 'balance',
+      data: balanceList,
+    });
+    process.exit();
   }
 }

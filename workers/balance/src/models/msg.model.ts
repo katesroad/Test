@@ -1,7 +1,7 @@
 export class TxBalanceMsg {
   address: string;
   tokens?: string[];
-  tlTokens: string[];
+  tlTokens?: string[];
 }
 
 export class ClientMsg<T> {
