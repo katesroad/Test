@@ -37,7 +37,7 @@ export const config = () => ({
   },
 
   cors: {
-    origin: [process.env.cors_domain],
+    origin: [...process.env.cors_domain.split(',')],
     optionsSuccessStatus: 204,
   },
 
@@ -57,7 +57,7 @@ export const config = () => ({
   ['service:tcp']: {
     transport: Transport.TCP,
     options: {
-      port: +process.env.tcp_port
-    }
-  }
+      port: +process.env.tcp_port,
+    },
+  },
 });

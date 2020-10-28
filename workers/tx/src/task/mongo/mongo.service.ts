@@ -17,7 +17,7 @@ export class MongoService extends CustomLogger {
   ): Promise<any> {
     const { $lte, $gt } = range;
     this.logInfoMsg(`Read txs from ${$gt}~${$lte}`);
-    if (check) {
+    if (check && check.txs) {
       while (true) {
         const synced = await this.doSyncCheck(check);
         if (synced) break;
