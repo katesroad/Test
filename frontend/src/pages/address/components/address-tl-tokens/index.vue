@@ -26,6 +26,7 @@
             <fsn365-datetime :timestamp="props.row.startTime" />
             ~
             <fsn365-datetime :timestamp="props.row.endTime" />
+            <b v-if="props.row.expired"> (<span>Expired</span>)</b>
           </q-td>
         </q-tr>
       </template>
@@ -90,15 +91,14 @@ export default {
               items.map((item) => {
                 const { StartTime, EndTime, Value } = item;
                 const now = Date.now() / 1000;
-                if (EndTime > now) {
                   tlList.push({
                     token: key,
                     startTime: StartTime,
                     endTime: EndTime,
                     value: Value / Math.pow(10, precision),
                     symbol,
+                    expired: now > EndTime
                   });
-                }
               });
             }
           });
