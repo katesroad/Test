@@ -33,7 +33,7 @@ export class AppService extends CustomLogger {
     this.setPrevTrackAt(syncHeight);
 
     const networkHeight = await this.getNetworkHeight();
-    if (networkHeight === syncHeight) await this.sleep(4000);
+    if (networkHeight === syncHeight) await this.sleep(13000);
 
     this.trackMiners();
   }
