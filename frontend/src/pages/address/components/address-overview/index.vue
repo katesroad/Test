@@ -68,7 +68,7 @@ export default {
       return (this.overview.fsn || 0) + " FSN";
     },
     tlBalance() {
-      return (this.overview.fsn_in || 0) + " FSN";
+      return (this.overview.fsn_in || 0 + (+this.fsn || 0)) + " FSN";
     },
     contractText() {
       if (this.overview.contract) return "Yes";
