@@ -24,6 +24,7 @@ export class WorkerClientService {
   }
 
   updateMinersInfo(miners: string[]): void {
+    if (miners.length === 0) return;
     const addressList = miners.map(miner => {
       return { address: miner, miner: true };
     });
