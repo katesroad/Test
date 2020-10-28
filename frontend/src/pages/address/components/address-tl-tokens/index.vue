@@ -1,12 +1,5 @@
 <template>
   <div>
-    <p class="card-tip">
-      <small style="color:red">
-        This module is under construction...
-        <!-- Tokens which are held by an address for a period of time are timelock
-        tokens. -->
-      </small>
-    </p>
     <q-table
       :data="data"
       :columns="columns"
@@ -50,8 +43,8 @@ export default {
   props: {
     hash: {
       type: String,
-      required: true
-    }
+      required: true,
+    },
   },
   data() {
     const rowsPerPageOptions = this.$store.state.ROW_OPTIONS_FOR_PAGE
@@ -62,51 +55,74 @@ export default {
       pagination: { rowsPerPage },
       rowsPerPageOptions,
       columns,
-      data: []
+      data: [],
     };
   },
   computed: {
     balanceTipText(row) {
       const { qty, qty_in, qty_own } = row;
       return "";
-    }
+    },
   },
   watch: {
     hash() {
       this.getBalance();
-    }
+    },
   },
   components: {
-    Fsn365Datetime
+    Fsn365Datetime,
   },
   created() {
-    // this.getTlBalance();
+    this.getTlBalances();
   },
   methods: {
-    async getTlBalance() {
+    async getTlBalances() {
       this.loading = true;
-      const balance = await this.$axios
-        .get(`/address/${this.hash}/tltokens`)
-        .then(balancesData => {
-          const balances = [];
-          balancesData.map(tokenTlBalance => {
-            const { symbol, token, data } = tokenTlBalance;
-            data.map(item => {
-              balances.push({
-                ...item,
-                token,
-                symbol
+      const balances = await this.rpcGetAddressTlBalance(this.hash).then(
+        async (data) => {
+          const tokens = Object.keys(data);
+          const snapshotMap = await this.getTokensSnapshots(tokens);
+          const tlList = [];
+          Object.keys(data).map((key) => {
+            const items = data[key].Items || [];
+            const { symbol, precision } = snapshotMap[key];
+            if (symbol) {
+              items.map((item) => {
+                const { StartTime, EndTime, Value } = item;
+                const now = Date.now() / 1000;
+                if (EndTime > now) {
+                  tlList.push({
+                    token: key,
+                    startTime: StartTime,
+                    endTime: EndTime,
+                    value: Value / Math.pow(10, precision),
+                    symbol,
+                  });
+                }
               });
-            });
+            }
           });
-          return balances;
-        }).catch(e => ([]));
+          return tlList;
+        }
+      ).catch(e => {
+        this.$q.notify({
+          message: 'Error happened when loading address timelock balance.',
+          position: "top",
+          color: "warning"
+        });
+      })
       this.loading = false;
-      this.data = balance;
+      this.data = balances;
+    },
+    getTokensSnapshots(tokens) {
+      return this.$axios.post("/token/snapshots", tokens).then((data) => {
+        console.log(data);
+        return data;
+      });
     },
     calcQty(qty) {
       return this.$utils.calcQty(qty);
-    }
-  }
+    },
+  },
 };
 </script>
