@@ -7,6 +7,9 @@ import {
   CacheTTL,
   UseInterceptors,
   CacheInterceptor,
+  Body,
+  Post,
+  HttpCode,
 } from '@nestjs/common';
 import { TokenService } from './token.service';
 import {
@@ -27,6 +30,12 @@ export class TokenController {
   @UsePipes(QueryTokensCmdPipe)
   getTokens(@Query() query: QueryTokensCmdDto) {
     return this.service.getTokens(query);
+  }
+
+  @HttpCode(200)
+  @Post('/snapshots')
+  getTokenSnapshots(@Body() tokenIds: string[]) {
+    return this.service.getTokenSnapshots(tokenIds);
   }
 
   @Get(':hash')
