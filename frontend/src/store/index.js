@@ -109,7 +109,7 @@ const store = new Vuex.Store({
 Vue.use(
   new VueSocketIO({
     debug: false,
-    connection: "https://fsn365.katecc.com",
+    connection: "https://api.fsn365.com",
     vuex: {
       store,
       actionPrefix: "set",
