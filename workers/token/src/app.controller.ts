@@ -48,7 +48,7 @@ export class AppController {
     });
   }*/
 
-  // cmd to track fusion token issue quantity change, from tx worker
+  // cmd to track fusion/erc20 token issue quantity change, from tx worker
   @MessagePattern('token:change')
   updateTokenQuantity(
     @Payload() msg: TokenChangeMsg,

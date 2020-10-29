@@ -11,24 +11,37 @@ import {
 
 export abstract class TxProcessor {
   static cleanTx(rawTx: RawTx): ProcessedTx {
-    const { gasPrice, gasUsed, from, timestamp, ...tx } = rawTx;
+    const {
+      gasPrice,
+      gasUsed,
+      from,
+      timestamp,
+      type,
+      erc20Receipts = [],
+      ...tx
+    } = rawTx;
     const txData = { ...tx };
+    let sender = from;
 
     delete txData.ivalue;
     delete txData.dvalue;
-    delete txData.erc20Receipts;
     delete txData.exchangeReceipts;
     delete txData.log;
-    delete txData.type;
     delete txData.to;
+
+    if (type === 'ERC20' && erc20Receipts[0]) {
+      const { logType } = erc20Receipts;
+      if (logType === 'Transfer') {
+        sender = erc20Receipts[0].from || from;
+      }
+    }
 
     const fee = (gasPrice * gasUsed) / Math.pow(10, 18);
 
-    const sender = from;
     const receiver = TxProcessor.getTxsRecevier(rawTx);
-    const type = TxProcessor.getTxsTypeID(rawTx);
+    const typeID = TxProcessor.getTxsTypeID(rawTx);
 
-    return { ...txData, type, sender, receiver, fee, age: timestamp };
+    return { ...txData, type: typeID, sender, receiver, fee, age: timestamp };
   }
 
   static getTxsRecevier(rawTx: RawTx): string {
@@ -52,9 +65,14 @@ export abstract class TxProcessor {
       case TRANSACTION_TYPES['ReportIllegalFunc'].type:
       case TRANSACTION_TYPES['CreateContract'].type:
         return FSN_CONTRACT;
-      case 'ERC20':
-        if (log && erc20Receipts.length) return erc20Receipts[0].to;
-        else return to;
+      case 'ERC20': {
+        const { logType } = erc20Receipts[0] && erc20Receipts[0];
+        if (logType === 'Transfer') {
+          return erc20Receipts[0].to || to;
+        }
+        // approval use it directly
+        return to;
+      }
       case 'Origin':
       case 'unknown':
       default: {

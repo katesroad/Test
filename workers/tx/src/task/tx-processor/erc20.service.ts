@@ -26,7 +26,18 @@ export class Erc20Service {
         return { tokens: [erc20], data: log };
       }
     }
-    const { erc20, value } = erc20Receipts[0];
+    const { erc20, value, from, to, logType } = erc20Receipts[0];
+
+    // Approval transaction, don't track it
+    if (logType !== 'Transfer') {
+      return { tokens: [], data: null };
+    }
+
+    // token quantity change
+    const x0Address = '0x0000000000000000000000000000000000000000';
+    if ([from, to].includes(x0Address)) {
+      this.workerClient.notifyTokenChange({ token: erc20 });
+    }
     const tokenSnapshot = await helper.getTokenSnapshot(erc20);
     const { symbol, precision } = tokenSnapshot;
     const qty = +value / Math.pow(10, precision);
