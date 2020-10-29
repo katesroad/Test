@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import { RawTx, TxAssetData, TxAssetsAndData } from '../../models';
-import { TxHelperService } from './tx-helper';
 import { FSN_TOKEN } from '../../common';
+import { RawTx, TxAssetData, TxAssetsAndData } from '../../models';
 import { WorkerClientService } from '../worker-client';
+import { TxHelperService } from './tx-helper';
 
 @Injectable()
 export class Erc20Service {
@@ -18,12 +18,17 @@ export class Erc20Service {
       return { data, tokens: [FSN_TOKEN] };
     }
     if (erc20Receipts.length === 0) {
-      const erc20 = log[0].contract;
-      const tokenSnapshot = await helper.getTokenSnapshot(erc20);
-      if (tokenSnapshot.symbol) {
-        const erc20Address = { address: erc20, erc20: true };
-        this.workerClient.notifyAddressInfo([erc20Address]);
-        return { tokens: [erc20], data: log };
+      try {
+        const erc20 = log[0].contract;
+        const tokenSnapshot = await helper.getTokenSnapshot(erc20);
+        if (tokenSnapshot.symbol) {
+          const erc20Address = { address: erc20, erc20: true };
+          this.workerClient.notifyAddressInfo([erc20Address]);
+          return { tokens: [erc20], data: log };
+        }
+      } catch {
+        // get token snapshot failed, not an erc20 token
+        return { tokens: [], data: null }
       }
     }
     const { erc20, value, from, to, logType } = erc20Receipts[0];
