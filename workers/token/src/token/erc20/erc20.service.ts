@@ -69,17 +69,10 @@ export class Erc20Service extends CustomLogger {
   }
 
   async getTokenSupply(tokenHash: string): Promise<number> {
-    const props = ['totalSupply', 'decimals'];
     const contract = this.getContract(tokenHash);
-    const promises = [];
-    props.map(prop => this.getErc20Prop(contract, prop));
-
-    return Promise.all(promises)
-      .then(data => {
-        const [supply, decimals] = data;
-        return +supply / Math.pow(+decimals, 10);
-      })
-      .catch(e => -1);
+    const supply = await this.getErc20Prop(contract, 'totalSupply');
+    const precision = await this.getErc20Prop(contract, 'decimals');
+    return supply / Math.pow(10, precision);
   }
 
   private getContract(address: string) {

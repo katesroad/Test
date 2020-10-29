@@ -181,7 +181,9 @@ export class AppService extends CustomLogger {
   // track fusion token quantity change cmd
   async updateTokenSupply(token: string): Promise<boolean> {
     const qty = await this.token.getTokenSupply(token);
-    if (qty === -1) return true;
+    if (qty === -1 || isNaN(qty)) {
+      return true;
+    }
 
     const provider = this.pg.getTrxProvider();
     const isExist = await this.pg.checkExistence(token, provider);
