@@ -37,7 +37,6 @@ export abstract class TxProcessor {
     }
 
     const fee = (gasPrice * gasUsed) / Math.pow(10, 18);
-
     const receiver = TxProcessor.getTxsRecevier(rawTx);
     const typeID = TxProcessor.getTxsTypeID(rawTx);
 
@@ -64,6 +63,7 @@ export abstract class TxProcessor {
       case TRANSACTION_TYPES['TakeMultiSwapFunc'].type:
       case TRANSACTION_TYPES['ReportIllegalFunc'].type:
       case TRANSACTION_TYPES['CreateContract'].type:
+      case TRANSACTION_TYPES['TakeSwapFuncExt'].type:
         return FSN_CONTRACT;
       case 'ERC20': {
         if (!erc20Receipts[0]) return to;
