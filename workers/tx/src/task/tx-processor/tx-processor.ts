@@ -66,12 +66,8 @@ export abstract class TxProcessor {
       case TRANSACTION_TYPES['CreateContract'].type:
         return FSN_CONTRACT;
       case 'ERC20': {
-        const { logType } = erc20Receipts[0] && erc20Receipts[0];
-        if (logType === 'Transfer') {
-          return erc20Receipts[0].to || to;
-        }
-        // approval use it directly
-        return to;
+        if (!erc20Receipts[0]) return to;
+        else return erc20Receipts[0].to;
       }
       case 'Origin':
       case 'unknown':
@@ -192,27 +188,23 @@ export abstract class TxProcessor {
     const { log, to, erc20Receipts = [], exchangeReceipts = [] } = rawTx;
 
     // log is null
-    if (!log) return rawTx.to;
+    if (!log) return to;
 
     const isContractLog = Array.isArray(log);
 
     // log is object
     if (!isContractLog) {
       const receiver = to;
-      if (receiver === FSN_CONTRACT) return log.To || to;
+      if (receiver === FSN_CONTRACT) return log.To;
       else return to;
     }
 
     // log is unknow smart contract's log
     if (isContractLog && !erc20Receipts.length) {
-      let receiver: string;
-      rawTx.log.map((logItem: any) => {
-        receiver = logItem.to;
-      });
-      return receiver || to;
+      return to;
     }
 
-    // erc20 transfer
+    // erc20 transfer, approval
     // fsn trading pair
     if (erc20Receipts.length === 1) {
       return rawTx.erc20Receipts[0].to;
