@@ -67,7 +67,7 @@ export default {
   },
   watch: {
     hash() {
-      this.getBalance();
+      this.getBalances();
     },
   },
   components: {
