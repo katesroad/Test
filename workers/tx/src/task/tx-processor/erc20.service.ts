@@ -17,7 +17,7 @@ export class Erc20Service {
       const data = { token: FSN_TOKEN, symbol: 'FSN', value };
       return { data, tokens: [FSN_TOKEN] };
     }
-    if (erc20Receipts.length === 0) {
+    if (!erc20Receipts.length) {
       try {
         const erc20 = log[0].contract;
         const tokenSnapshot = await helper.getTokenSnapshot(erc20);
@@ -28,7 +28,7 @@ export class Erc20Service {
         }
       } catch {
         // get token snapshot failed, not an erc20 token
-        return { tokens: [], data: null }
+        return { tokens: [], data: null };
       }
     }
     const { erc20, value, from, to, logType } = erc20Receipts[0];
@@ -43,13 +43,15 @@ export class Erc20Service {
     if ([from, to].includes(x0Address)) {
       this.workerClient.notifyTokenChange({ token: erc20 });
     }
-    const tokenSnapshot = await helper.getTokenSnapshot(erc20);
-    const { symbol, precision } = tokenSnapshot;
-    const qty = +value / Math.pow(10, precision);
-
-    const data = { token: erc20, symbol, value: qty };
-    const tokens = [erc20];
-
-    return { data, tokens };
+    try {
+      const tokenSnapshot = await helper.getTokenSnapshot(erc20);
+      const { symbol, precision } = tokenSnapshot;
+      const qty = +value / Math.pow(10, precision);
+      const data = { token: erc20, symbol, value: qty };
+      const tokens = [erc20];
+      return { data, tokens };
+    } catch {
+      return { data: null, tokens: [] };
+    }
   }
 }
