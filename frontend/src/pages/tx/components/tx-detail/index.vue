@@ -219,6 +219,7 @@ export default {
     },
     isTicketTx() {
       const { log = {} } = this.tx;
+      if(!this.tx.log) return false;
       return !!log.TicketOwner
     },
     useTransactionInfo() {
