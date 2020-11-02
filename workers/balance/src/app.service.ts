@@ -27,10 +27,16 @@ export class AppService extends CustomLogger {
     const provider = this.pg.getTrxProvider();
     const trx = await provider();
     const promises = msgs.map(msg => this.getMsgBalances(msg));
-    const holdersRecords = await Promise.all(promises).then(results => {
+    const rawRecords = await Promise.all(promises).then(results => {
       const tokenHoldersBalances = [];
       results.map(result => tokenHoldersBalances.push(...result));
       return tokenHoldersBalances;
+    });
+
+    const holdersRecords = rawRecords.filter(record => {
+      const { qty, qty_in } = record;
+      // no qty or qty_in, error
+      if (qty !== undefined || qty_in !== undefined) return record;
     });
 
     const getOperationPromises = holdersRecords.map(item =>

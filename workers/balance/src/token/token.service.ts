@@ -39,8 +39,8 @@ export class TokenService extends CustomLogger {
       .catch(e => {
         this.logError({ method: 'getTokenBalance', e, data: holder });
         console.log(e);
-        process.exit();
-        return null;
+        // dont update in case of blocking balance updation for other addresses
+        return {...holder};
       });
   }
 
