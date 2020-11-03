@@ -41,8 +41,8 @@
     </p>
     <p class="row justify-start items-center">
       <b> Tokens Transfered </b><b>From</b>
-      <fusion-hash prefix="/address" :hash="tx.sender" /> <b>To</b>
-      <fusion-hash prefix="/address" :hash="tx.receiver" /> <b>For</b>
+      <fusion-hash prefix="address" :hash="tx.sender" /> <b>To</b>
+      <fusion-hash prefix="address" :hash="tx.receiver" /> <b>For</b>
       {{ tx.data.value }}
       <router-link :to="`/token/${tx.data.token}`">{{
         tx.data.symbol
