@@ -9,7 +9,7 @@ export const TRANSACTION_TYPES = {
   TimeLockFunc: { type: 'TimeLokcFunc', id: 3 },
   MakeSwapFunc: { type: 'MakeSwapFunc', id: 4 },
   MakeSwapFuncExt: { type: 'MakeSwapFuncExt', id: 4 },
-  MakeMultiSwapFunc: { type: 'MakeMultipleSwapFunc', id: 4 },
+  MakeMultiSwapFunc: { type: 'MakeMultiSwapFunc', id: 4 },
   RecallSwapFunc: { type: 'RecallSwapFunc', id: 5 },
   RecallMultiSwapFunc: { type: 'RecallMultiSwapFunc', id: 5 },
   TakeSwapFunc: { type: 'TakeSwapFunc', id: 6 },

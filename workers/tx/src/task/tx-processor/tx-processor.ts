@@ -64,6 +64,7 @@ export abstract class TxProcessor {
       case TRANSACTION_TYPES['ReportIllegalFunc'].type:
       case TRANSACTION_TYPES['CreateContract'].type:
       case TRANSACTION_TYPES['TakeSwapFuncExt'].type:
+      case TRANSACTION_TYPES['MakeMultiSwapFunc'].type:
         return FSN_CONTRACT;
       case 'ERC20': {
         if (!erc20Receipts[0]) return to;
