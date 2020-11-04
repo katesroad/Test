@@ -222,17 +222,25 @@ export class AppService extends CustomLogger {
           } else {
             if (token.length === 42) {
               addressStatsMap[address] = { address, erc20: count, fusion: 0 };
-            } else
+            } else {
               addressStatsMap[address] = { address, fusion: count, erc20: 0 };
+            }
           }
         });
 
-        const tokenMsgs = Object.keys(tokenStatsMap).map(
-          tokenKey => tokenStatsMap[tokenKey],
-        );
-        const addressMsgs = Object.keys(addressStatsMap).map(
-          addressKey => addressStatsMap[addressKey],
-        );
+        const tokenMsgs = [];
+        Object.keys(tokenStatsMap).map(key => {
+          const { count } = tokenStatsMap[key];
+          if (count !== 0) tokenMsgs.push(tokenStatsMap[key]);
+        });
+
+        const addressMsgs = [];
+        Object.keys(addressStatsMap).map(key => {
+          const { fusion, erc20 } = addressStatsMap[key];
+          if (fusion || erc20) {
+            addressMsgs.push(addressStatsMap[key]);
+          }
+        });
         if (tokenMsgs.length) {
           this.workerClient.notifyTokenHoldersChange(tokenMsgs);
         }
@@ -323,6 +331,6 @@ export class AppService extends CustomLogger {
 
   private cachePair(type: string, pair: { token: string; address }): void {
     const key = this.getPairKey(type, pair);
-    this.redis.cacheValue(key, JSON.stringify(true), 3);
+    this.redis.cacheValue(key, JSON.stringify(true), 13);
   }
 }
