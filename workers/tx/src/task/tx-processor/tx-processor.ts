@@ -48,7 +48,6 @@ export abstract class TxProcessor {
     switch (type) {
       case TRANSACTION_TYPES['SendAssetFunc'].type:
       case TRANSACTION_TYPES['TimeLockFunc'].type:
-        // 0x0362079985e5cbd48868ed1d1d4224c6d85747710c41a0ea92d76fd3e3bb0c2d at testnet
         return (log && log.To) || FSN_CONTRACT;
       case TRANSACTION_TYPES['GenAssetFunc'].type:
       case TRANSACTION_TYPES['AssetValueChangeFunc'].type:
@@ -56,18 +55,18 @@ export abstract class TxProcessor {
       case TRANSACTION_TYPES['ReportIllegalFunc'].type:
       case TRANSACTION_TYPES['MakeSwapFunc'].type:
       case TRANSACTION_TYPES['RecallSwapFunc'].type:
-      case TRANSACTION_TYPES['TakeSwapFunc'].type:
       case TRANSACTION_TYPES['MakeSwapFuncExt'].type:
+      case TRANSACTION_TYPES['TakeSwapFunc'].type:
+      case TRANSACTION_TYPES['TakeSwapFuncExt'].type:
       case TRANSACTION_TYPES['TakeMultiSwapFunc'].type:
+      case TRANSACTION_TYPES['MakeMultiSwapFunc'].type:
       case TRANSACTION_TYPES['RecallMultiSwapFunc'].type:
       case TRANSACTION_TYPES['TakeMultiSwapFunc'].type:
       case TRANSACTION_TYPES['ReportIllegalFunc'].type:
       case TRANSACTION_TYPES['CreateContract'].type:
-      case TRANSACTION_TYPES['TakeSwapFuncExt'].type:
-      case TRANSACTION_TYPES['MakeMultiSwapFunc'].type:
         return FSN_CONTRACT;
       case 'ERC20': {
-        if (!erc20Receipts[0]) return to;
+        if (!erc20Receipts[0]) return to || FSN_CONTRACT;
         else return erc20Receipts[0].to;
       }
       case 'Origin':
