@@ -12,8 +12,8 @@ export class Erc20Service extends CustomLogger {
 
   constructor(config: ConfigService) {
     super(`Erc20Service`);
-    const RPC_PROVIDER = config.get('rpc_url');
-    this.web3 = new Web3(RPC_PROVIDER);
+    const WSS_PROVIDER = config.get('wss_url');
+    this.web3 = new Web3(WSS_PROVIDER);
   }
 
   async getTokenInfoByIssueTxHash(hash: string): Promise<Partial<TokenInfo>> {
