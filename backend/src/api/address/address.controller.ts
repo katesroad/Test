@@ -63,7 +63,7 @@ export class AddressController {
   }
 
   @Get(':address/txs')
-  @CacheTTL(1300)
+  @CacheTTL(6)
   @UsePipes(QueryCmdPipe)
   getAddressTxs(
     @Param('address', AddressPipe) address: AddressId,
