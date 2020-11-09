@@ -1,4 +1,4 @@
-import { Server, CustomTransportStrategy } from '@nestjs/microservices';
+import { CustomTransportStrategy, Server } from '@nestjs/microservices';
 import { EMPTY, Observable } from 'rxjs';
 
 const Web3 = require('web3');
@@ -29,7 +29,16 @@ export class Web3Server extends Server implements CustomTransportStrategy {
 
   private async init() {
     const provider = new Web3.providers.WebsocketProvider(this.wssUrl);
-    const web3 = new Web3(provider);
+    const web3 = new Web3(provider, {
+      timeout: 3000,
+      keepalive: true,
+      reconnect: {
+        auto: true,
+        delay: 5000, // ms
+        maxAttempts: 50,
+        onTimeout: false,
+      },
+    });
     this.subscription = web3.eth.subscribe(
       'newBlockHeaders',
       (error: Error, blockHeader: any) => {
