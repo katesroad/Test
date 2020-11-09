@@ -12,8 +12,18 @@ export class Erc20Service extends CustomLogger {
 
   constructor(config: ConfigService) {
     super(`Erc20Service`);
+    // https://web3js.readthedocs.io/en/v1.3.0/web3-eth.html#configuration
     const WSS_PROVIDER = config.get('wss_url');
-    this.web3 = new Web3(WSS_PROVIDER);
+    this.web3 = new Web3(WSS_PROVIDER, {
+      timeout: 3000,
+      keepalive: true,
+      reconnect: {
+        auto: true,
+        delay: 5000, // ms
+        maxAttempts: 50,
+        onTimeout: false,
+      },
+    });
   }
 
   async getTokenInfoByIssueTxHash(hash: string): Promise<Partial<TokenInfo>> {
