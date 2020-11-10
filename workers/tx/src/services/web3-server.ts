@@ -28,8 +28,7 @@ export class Web3Server extends Server implements CustomTransportStrategy {
   }
 
   private async init() {
-    const provider = new Web3.providers.WebsocketProvider(this.wssUrl);
-    const web3 = new Web3(provider, {
+    const provider = new Web3.providers.WebsocketProvider(this.wssUrl, {
       timeout: 3000,
       keepalive: true,
       reconnect: {
@@ -39,6 +38,27 @@ export class Web3Server extends Server implements CustomTransportStrategy {
         onTimeout: false,
       },
     });
+
+    const reload = async args => {
+      provider.disconnect();
+      console.log(args);
+      try {
+        this.subscription.unsubscribe();
+      } catch {}
+      await this.init();
+    };
+
+    provider.on('error', () => {
+      reload(arguments);
+    });
+    provider.on('disconnect', () => {
+      reload(arguments);
+    });
+    provider.on('connect', async () => {
+      console.log('web3 wss connected...\n');
+    });
+
+    const web3 = new Web3(provider);
     this.subscription = web3.eth.subscribe(
       'newBlockHeaders',
       (error: Error, blockHeader: any) => {
@@ -46,9 +66,10 @@ export class Web3Server extends Server implements CustomTransportStrategy {
           this.logger.error(JSON.stringify(error));
           return;
         }
-        web3.eth
-          .getBlock(blockHeader.number)
-          .then(async (block: any) => this.call('network:block', block));
+        web3.eth.getBlock(blockHeader.number).then(async (block: any) => {
+          this.call('network:block', block);
+          console.log('network height:', block.number);
+        });
       },
     );
   }
