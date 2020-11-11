@@ -11,10 +11,9 @@ const Web3 = require('web3');
 export class Erc20TokenService extends CustomLogger implements IToken {
   private web3: any;
 
-  constructor(config: ConfigService) {
+  constructor(private readonly configService: ConfigService) {
     super('Erc20TokenService');
-    const RPC_PROVIDER = config.get('rpc_url');
-    this.web3 = new Web3(RPC_PROVIDER);
+    this.init();
   }
 
   async getTokenSnapshot(address: string): Promise<TokenSnapshot> {
@@ -57,5 +56,38 @@ export class Erc20TokenService extends CustomLogger implements IToken {
         if (res) resolve(res);
       });
     });
+  }
+
+  private init() {
+    // https://web3js.readthedocs.io/en/v1.3.0/web3-eth.html#configuration
+    const provider = new Web3.providers.WebsocketProvider(
+      this.configService.get('wss_url'),
+      {
+        timeout: 3000,
+        keepalive: true,
+        reconnect: {
+          auto: true,
+          delay: 5000, // ms
+          maxAttempts: 50,
+          onTimeout: false,
+        },
+      },
+    );
+    const reload = () => {
+      try {
+        provider.disconnect();
+        this.init();
+      } catch {}
+    };
+    provider.on('error', () => {
+      console.log('error');
+      reload();
+    });
+    provider.on('connect', () => console.log('connect'));
+    provider.on('disconnect', () => {
+      console.log('disconnect');
+      reload();
+    });
+    this.web3 = new Web3(provider);
   }
 }

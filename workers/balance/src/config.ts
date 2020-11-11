@@ -49,7 +49,9 @@ export const config = (): any => ({
     port: process.env.redis_port || 6379,
   },
 
+  // web3 and fusion rpc service
   rpc_url: process.env.rpc_url,
+  wss_url: process.env.wss_url,
 
   app: {
     name: 'worker:balance',
