@@ -86,4 +86,6 @@ export const config = () => ({
   },
 
   rpcServer: process.env.rpc_url,
+
+  wss_url: process.env.wss_url,
 });

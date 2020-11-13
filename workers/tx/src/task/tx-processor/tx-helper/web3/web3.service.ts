@@ -11,10 +11,9 @@ export class Web3Service extends CustomLogger {
   private retried = 0;
   private web3: any;
 
-  constructor(config: ConfigService) {
+  constructor(private readonly config: ConfigService) {
     super('Erc20TokenService');
-    const RPC_PROVIDER = config.get('rpc_url');
-    this.web3 = new Web3(RPC_PROVIDER);
+    this.init();
   }
 
   async getContractAddress(txHash: string): Promise<string> {
@@ -92,5 +91,39 @@ export class Web3Service extends CustomLogger {
         resolve(null);
       }, ms);
     });
+  }
+
+  private init() {
+    const WSS_PROVIDER = this.config.get('wss_url');
+    const provider = new Web3.providers.WebsocketProvider(WSS_PROVIDER, {
+      timeout: 3000,
+      keepalive: true,
+      reconnect: {
+        auto: true,
+        delay: 5000, // ms
+        maxAttempts: 50,
+        onTimeout: false,
+      },
+    });
+    const reload = () => {
+      try {
+        provider.disconnect();
+        this.init();
+      } catch {}
+    };
+
+    provider.on('error', e => {
+      console.log(`provider error: ${JSON.stringify(e)}`);
+      reload();
+    });
+    provider.on('disconnect', e => {
+      console.log(`provider disconnect: ${JSON.stringify(e)}`);
+      reload();
+    });
+    provider.on('connect', async () => {
+      console.log('web3.service.ts wss connected...\n');
+    });
+
+    this.web3 = new Web3(provider);
   }
 }
