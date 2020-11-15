@@ -27,10 +27,10 @@
             </router-link>
           </q-td>
           <q-td key="qty" :props="props">
-            <calc-qty :qty="props.row.qty" :tooltip="true" />
+            <calc-qty :qty="props.row.qty" :tooltip="true" :fixed="4" />
           </q-td>
           <q-td key="qty_in" :props="props">
-            <calc-qty :qty="props.row.qty_in" :tooltip="true" />
+            <calc-qty :qty="props.row.qty_in" :tooltip="true"  :fixed="4" />
           </q-td>
         </q-tr>
       </template>

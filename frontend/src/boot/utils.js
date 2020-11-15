@@ -38,7 +38,7 @@ export const utils = {
   getL6Bks() {
     return getLocalStorage("l6bks") || [];
   },
-  calcQty(value) {
+  calcQty(value, fixed = 1) {
     const oneM = 1000000;
     const oneK = 1000;
     if (value >= oneM) {
@@ -46,7 +46,8 @@ export const utils = {
     } else if (value > oneK) {
       return (value / oneK).toFixed(1) + " k";
     }
-    return value.toFixed(1);
+    if(value ===0) return 0;
+    else {return value.toFixed(fixed);}
   },
   isFSNToken(hash) {
     return hash === '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';
