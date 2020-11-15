@@ -34,7 +34,7 @@ export class BlockController {
   }
 
   @Get(':height/txs')
-  @CacheTTL(3600)
+  @CacheTTL(13)
   getBlocksTxs(@Param('height', ParseIntPipe) height: number): Promise<ITx[]> {
     return this.service.getBlocksTxs(height);
   }
