@@ -12,19 +12,23 @@ export default {
   name: 'cacl-qty',
   props: {
     qty: [Number, String],
-    tooltip: Boolean
+    tooltip: Boolean,
+    fixed: {
+      type: Number,
+      default: 1
+    }
   },
   computed: {
     qtyText () {
       if(this.qty) {
-        return this.calcQty(+this.qty);
+        return this.calcQty(+this.qty, +this.fixed);
       }
       return 0;
     }
   },
   methods: {
-    calcQty(value) {
-      return this.$utils.calcQty(value);
+    calcQty(value, fixed) {
+      return this.$utils.calcQty(value, fixed);
     },
   }
 }
