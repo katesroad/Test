@@ -5,7 +5,7 @@ import { TokenHoldersChangeMsg } from '../models';
 
 @Injectable()
 export class TokenClientService {
-  readonly pattern = 'token:holders';
+  readonly pattern = 'holders:change';
 
   constructor(
     @Inject(TOKEN_SERVICE_NAME) private readonly client: ClientProxy,

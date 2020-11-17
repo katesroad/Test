@@ -1,17 +1,27 @@
 import { Injectable, HttpService } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { HelperService } from '../../common';
 import { FSN_TOKEN } from '../../constant';
-import { CustomLogger } from '../../common';
 import { ITokenHolder, TokenSnapshot } from '../../models';
 import { IFusionToken } from '../token.interface';
 
+/**
+ * Interact with fusion rpc service to
+ */
 @Injectable()
-export class FusionTokenService extends CustomLogger implements IFusionToken {
+export class FusionTokenService implements IFusionToken {
   private tlRetried = 0;
-  constructor(private http: HttpService, private config: ConfigService) {
-    super('FusionTokenService');
-  }
+  constructor(
+    private readonly http: HttpService,
+    private readonly config: ConfigService,
+    private readonly helper: HelperService,
+  ) {}
 
+  /**
+   * Get address token balance
+   * @param holder: {token:string, address:string}
+   * @returns string
+   */
   async getTokenBalance(holder: ITokenHolder): Promise<string> {
     const method = 'fsn_getBalance';
     const { token, address } = holder;
@@ -20,8 +30,19 @@ export class FusionTokenService extends CustomLogger implements IFusionToken {
     return this.makeRequest(method, params);
   }
 
-  async getTokenTlBalance(holder: ITokenHolder, wait?: number): Promise<any[]> {
-    if (wait) await this.sleep(wait);
+  /**
+   * Get timelock balance for a token and address pair
+   * @param holder: {address:string, token:string}
+   * @returns {items?:ITimeLockRecord[], hasError: boolean}
+   */
+  async getTokenTlBalance(
+    holder: ITokenHolder,
+    wait?: number,
+  ): Promise<{
+    items?: any[];
+    hasError: boolean;
+  }> {
+    if (wait) await this.helper.sleep(wait);
 
     const method = 'fsn_getTimeLockBalance';
     const { token, address } = holder;
@@ -30,21 +51,31 @@ export class FusionTokenService extends CustomLogger implements IFusionToken {
       .then(async result => {
         if (result) {
           this.tlRetried = 0;
-          return result.Items;
-        } else {
-          this.tlRetried += 1;
-          if (this.tlRetried > 4) return [];
-          return this.getTokenTlBalance(holder, 500);
+          return {
+            items: result.Items,
+            hasError: false,
+          };
         }
+        this.tlRetried += 1;
+        if (this.tlRetried > 4) {
+          return { hasError: true };
+        }
+        return this.getTokenTlBalance(holder, 500);
       })
       .catch(e => {
         this.tlRetried += 1;
-        if (this.tlRetried > 4) return [];
+        if (this.tlRetried > 4) {
+          return { hasError: true };
+        }
         return this.getTokenTlBalance(holder, 500);
       });
   }
 
-  // Get asset's key informaton: Decimals, Symbol
+  /***
+   * Get native token's symbol and decimails
+   * @param token:string;
+   * @returns {symbol:string, precision:number}
+   */
   async getTokenSnapshot(token: string): Promise<TokenSnapshot> {
     if (token === FSN_TOKEN) return { symbol: 'FSN', precision: 18 };
 
@@ -55,7 +86,7 @@ export class FusionTokenService extends CustomLogger implements IFusionToken {
     return { symbol: Symbol, precision: Decimals };
   }
 
-  // Fusion RPC service: https://github.com/FUSIONFoundation/efsn/wiki/FSN-RPC-API
+  // Interact with Fusion RPC service: https://github.com/FUSIONFoundation/efsn/wiki/FSN-RPC-API
   private async makeRequest(method: string, params: string[]): Promise<any> {
     const RPC_URL = this.config.get('rpc_url');
     return this.http
@@ -69,21 +100,16 @@ export class FusionTokenService extends CustomLogger implements IFusionToken {
       .then(res => res.data)
       .then(data => data.result)
       .catch(e => {
-        this.logError({ method: 'makeRequest', e, data: { method, params } });
-        // frequently request makes the rpc server socket hang out, restart application
+        this.helper.logError({
+          method: 'makeRequest',
+          e,
+          data: { method, params },
+        });
+
+        // Frequently request RPC server make it hang out, restart workerclear
         setTimeout(() => {
           process.exit();
         }, 100);
       });
-  }
-
-  private sleep(ms: number) {
-    return new Promise(resolve => {
-      let t = setTimeout(() => {
-        clearTimeout(t);
-        t = null;
-        resolve(ms);
-      }, ms);
-    });
   }
 }

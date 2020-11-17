@@ -1,27 +1,7 @@
 # Balance Services
 
 ## Exposured Interfaces
-
-- balance
-  - usage: Update address token's balance
-  - msg format
-  ```ts
-  export class TxBalanceMsg {
-    s: string;
-    r?: string;
-    tokens?: string[];
-  }
-  ```
-- tl_balance
-  - usage: Update address timelock token's balance
-  - msg format
-  ```ts
-  export class TxBalanceMsg {
-    s: string;
-    r?: string;
-    tokens?: string[];
-  }
-  ```
+Please `Please refer app.controller.ts` 
 
 ### Interaction with other workers
 
@@ -29,13 +9,11 @@
 
 ## Functionality
 
-- update address timelock tokens' balance on table *address_tl_tokens*
-
-- update address tokens' balance on table *address_tokens*
-
-- update address address erc20 tokens' balance on table *address_erc20_tokens*
+- track address balances change
 
 - Notify token worker to update holder's count
+
+- Notify address worker to update holding token's types change
 
 ## How to start services
 

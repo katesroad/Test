@@ -1,4 +1,4 @@
-import { ITokenHolder } from './address.model';
+import { ITokenBalance, ITokenHolder } from './address.model';
 
 export * from './token.model';
 export * from './msg.model';
@@ -17,4 +17,5 @@ export enum PG_CMD {
   create = 'create',
   update = 'update',
   del = 'del',
+  nil = '',
 }

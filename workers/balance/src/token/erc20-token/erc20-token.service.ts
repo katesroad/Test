@@ -1,21 +1,28 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { CustomLogger } from '../../common';
 import { TokenSnapshot, ITokenHolder } from '../../models';
 import { abi } from './abi';
 import { IToken } from '../token.interface';
+import { HelperService } from '../../common';
 
 const Web3 = require('web3');
 
 @Injectable()
-export class Erc20TokenService extends CustomLogger implements IToken {
+export class Erc20TokenService implements IToken {
   private web3: any;
 
-  constructor(private readonly configService: ConfigService) {
-    super('Erc20TokenService');
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly helper: HelperService,
+  ) {
     this.init();
   }
 
+  /**
+   * Get token key information including token symbol and decimails
+   * @param address string
+   * @returns {symbol:string, precision:string}
+   */
   async getTokenSnapshot(address: string): Promise<TokenSnapshot> {
     const contract = this.getTokenContract(address);
     const props = ['symbol', 'decimals'];
@@ -27,13 +34,18 @@ export class Erc20TokenService extends CustomLogger implements IToken {
         return { symbol, precision };
       })
       .catch(e => {
-        this.logError({ method: 'getTokenSnapshot', e });
+        this.helper.logError({ method: 'getTokenSnapshot', e });
         return null;
       });
 
     return snapshot;
   }
 
+  /**
+   * get erc20 token raw balance for an address
+   * @param holder {address:string, token:string}
+   * @return string
+   */
   async getTokenBalance(holder: ITokenHolder): Promise<string> {
     const { token, address } = holder;
     const contract = this.getTokenContract(token);
@@ -58,6 +70,9 @@ export class Erc20TokenService extends CustomLogger implements IToken {
     });
   }
 
+  /**
+   * Init web3 instance for interacting with smart contract purpose
+   */
   private init() {
     // https://web3js.readthedocs.io/en/v1.3.0/web3-eth.html#configuration
     const provider = new Web3.providers.WebsocketProvider(
@@ -83,7 +98,7 @@ export class Erc20TokenService extends CustomLogger implements IToken {
       console.log('error');
       reload();
     });
-    provider.on('connect', () => console.log('connect'));
+    provider.on('connect', () => console.log('web3 for balance worker connected!!'));
     provider.on('disconnect', () => {
       console.log('disconnect');
       reload();

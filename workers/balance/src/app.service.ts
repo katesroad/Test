@@ -5,24 +5,29 @@ import {
   ITokenBalance,
   PgTokenPrevBalance,
   PG_CMD,
+  AddresBalancesOperation,
+  PAIR_TYPE,
 } from './models';
 import { FSN_TOKEN1 } from './constant';
-import { CustomLogger } from './common';
 import { TokenService } from './token';
-import { RedisHelperService } from './redis-helper';
-import { WorkerClientService } from './worker-client/worker-client.service';
+import { WorkerClientService } from './worker-client';
+import { HelperService, RedisHelperService } from './common';
 
 @Injectable()
-export class AppService extends CustomLogger {
+export class AppService {
   constructor(
-    private pg: PgService,
-    private token: TokenService,
-    private redis: RedisHelperService,
-    private workerClient: WorkerClientService,
-  ) {
-    super('AppService');
-  }
+    private readonly pg: PgService,
+    private readonly token: TokenService,
+    private readonly redis: RedisHelperService,
+    private readonly workerClient: WorkerClientService,
+    private readonly helper: HelperService,
+  ) {}
 
+  /**
+   * Save/Update/Del address balances to PostgreSQL
+   * @param msgs: {address:string, tokens?: [], tl_tokens?:string[]}[]
+   * @returns boolean. true: operations is done, false: opertion is failed
+   */
   async processBalanceMsgInBatch(msgs: TxBalanceMsg[]) {
     const provider = this.pg.getTrxProvider();
     const trx = await provider();
@@ -34,9 +39,12 @@ export class AppService extends CustomLogger {
     });
 
     const holdersRecords = rawRecords.filter(record => {
-      const { qty, qty_in } = record;
-      // no qty or qty_in, error
-      if (qty !== undefined || qty_in !== undefined) return record;
+      const { qty, qty_in, data } = record;
+
+      // no qty, data, or qty_in, an invalid record
+      if (qty !== undefined || qty_in !== undefined || data !== undefined) {
+        return record;
+      }
     });
 
     const getOperationPromises = holdersRecords.map(item =>
@@ -50,29 +58,39 @@ export class AppService extends CustomLogger {
         return res;
       })
       .catch(e => {
-        this.logError({ method: 'processBalanceMsgs', e });
+        this.helper.logError({ method: 'processBalanceMsgs', e });
         trx.rollback();
         return false;
       });
   }
 
+  /**
+   * Get address balance record/s
+   * @param msg: TxBalanceMsg
+   * @returns {token:string, address:string, qty?:number,qty_in?:number, data?:any}
+   * */
   private getMsgBalances(msg: TxBalanceMsg): Promise<Partial<ITokenBalance>[]> {
-    const { address } = msg;
+    const { address, tokens = [], tlTokens = [] } = msg;
     const getTlBalances = this.getHoldersTlBalances(
       address,
-      this.delInvalidAsset(msg.tlTokens),
+      this.delInvalidAsset(tlTokens),
     );
     const getBalances = this.getHoldersBalances(
       address,
-      this.delInvalidAsset(msg.tokens),
+      this.delInvalidAsset(tokens),
     );
     return Promise.all([getTlBalances, getBalances]).then(data => {
       let [tlBalancesMap, balancesMap] = data;
       Object.keys(tlBalancesMap).map(token => {
-        const { qty_in } = tlBalancesMap[token];
+        const { qty_in, data = null } = tlBalancesMap[token];
         if (qty_in !== undefined) {
           if (balancesMap[token]) balancesMap[token].qty_in = qty_in;
           else balancesMap[token] = { address, token, qty_in };
+          delete tlBalancesMap[token].qty_in;
+        }
+        if (data) {
+          if (balancesMap[token]) balancesMap[token].data = data;
+          else balancesMap[token] = { address, token, data };
         }
         delete tlBalancesMap[token];
       });
@@ -81,17 +99,24 @@ export class AppService extends CustomLogger {
     });
   }
 
+  /**
+   * Get address timeblock balances for a timelock balance update message
+   * @param address:string
+   * @param tokens: string[], can either be erc20 token or native token
+   */
   private async getHoldersTlBalances(
     address: string,
     tokens: string[],
-  ): Promise<{ [key: string]: Partial<ITokenBalance> }> {
+  ): Promise<{ [token: string]: Partial<ITokenBalance> }> {
     const balanceMap = {};
     if (!tokens.length) return balanceMap;
     const tokensToTrack: string[] = [];
     const tokensToTrackPromises = tokens.map(token => {
-      return this.checkTlPair({ token, address }).then(res => {
-        if (!res) tokensToTrack.push(token);
-      });
+      return this.checkPair(PAIR_TYPE.tl_balance, { token, address }).then(
+        res => {
+          if (!res) tokensToTrack.push(token);
+        },
+      );
     });
 
     await Promise.all(tokensToTrackPromises);
@@ -101,29 +126,45 @@ export class AppService extends CustomLogger {
       this.token.getTokenTlBalance({ address, token }),
     );
     return Promise.all(promises)
-      .then(data => {
-        data.map(tlBalance => {
-          const { token, qty_in } = tlBalance;
-          balanceMap[token] = { token, address, qty_in };
+      .then(tlBalances => {
+        tlBalances.map(tlBalance => {
+          if (!tlBalance) return;
+          const { token, qty_in, data } = tlBalance;
+          if (qty_in !== undefined) {
+            if (balanceMap[token]) {
+              balanceMap[token].qty_in = qty_in;
+            } else {
+              balanceMap[token] = { qty_in };
+            }
+          }
+          if (data) {
+            if (balanceMap[token]) balanceMap[token].data = data;
+            else balanceMap[token] = { data };
+          }
         });
         return balanceMap;
       })
       .catch(e => {
-        this.logError({ method: 'getHolderTlbalances', e });
+        this.helper.logError({ method: 'getHolderTlbalances', e });
         return balanceMap;
       });
   }
 
+  /**
+   * Get address balances for a balance update message
+   * @param address:string
+   * @param tokens: string[], can either be erc20 token or native token
+   */
   private async getHoldersBalances(
     address: string,
     tokens: string[],
-  ): Promise<{ [key: string]: Partial<ITokenBalance> }> {
+  ): Promise<{ [token: string]: Partial<ITokenBalance> }> {
     const balanceMap = {};
     if (!tokens.length) return balanceMap;
 
     const tokensToTrack = [];
     const checkCachePromises = tokens.map(token => {
-      return this.checkBalancePair({ token, address }).then(res => {
+      return this.checkPair(PAIR_TYPE.balance, { token, address }).then(res => {
         if (!res) tokensToTrack.push(token);
       });
     });
@@ -135,111 +176,148 @@ export class AppService extends CustomLogger {
     );
     return Promise.all(promises).then(data => {
       data.map(balance => {
-        if (!balance) return;
-        const { token, qty } = balance;
-        balanceMap[token] = { token, address, qty };
+        if (balance) {
+          const { token, qty } = balance;
+          balanceMap[token] = { token, address, qty };
+        }
       });
       return balanceMap;
     });
   }
 
+  /***
+   * Get the operation of a holder(address, token) pair
+   * @param recordToTrack: ITokenBalance
+   * @returns AddressBalanceOperation
+   */
   private async getAddressBalancesOperation(
     recordToTrack: ITokenBalance,
     provider: any,
-  ): Promise<{ record: Partial<ITokenBalance>; cmd: string }> {
-    const { address, token, ...others } = recordToTrack;
+  ): Promise<AddresBalancesOperation> {
+    const { address, token, data, qty = undefined } = recordToTrack;
     return this.pg
       .checkExistence({ address, token }, provider)
       .then(prevRecord => {
-        let cmd: string = '';
+        let cmd: any = PG_CMD.nil;
+        let count = 0;
+        let type: string;
+        if (data) type = PAIR_TYPE.tl_balance;
+        if (qty !== undefined) type = PAIR_TYPE.balance;
         const qtyOwn = this.calcQtyOwn(recordToTrack, prevRecord);
-        if (!prevRecord && qtyOwn) cmd = PG_CMD.create;
-        if (prevRecord && !qtyOwn) cmd = PG_CMD.del;
-        if (prevRecord && qtyOwn) cmd = PG_CMD.update;
+        const saveRecord = qtyOwn || data;
+        if (!prevRecord && saveRecord) {
+          cmd = PG_CMD.create;
+          if (qtyOwn) count = 1;
+        }
+        if (prevRecord && !saveRecord) {
+          cmd = PG_CMD.del;
+          if (prevRecord.qty_own) {
+            count = -1;
+          }
+        }
+        if (prevRecord && saveRecord) {
+          cmd = PG_CMD.update;
+          if (prevRecord.qty_own && qtyOwn) {
+            count = 1;
+          }
+        }
 
+        let token_type: number;
+        if (this.token.isErc20Token(token)) {
+          token_type = 1;
+        } else {
+          token_type = 0;
+        }
         const record: Partial<ITokenBalance> = {
-          address,
-          token,
+          ...recordToTrack,
           qty_own: qtyOwn,
-          ...others,
+          token_type,
         };
-        // erc20 token doesn't have qty_own property
-        if (this.token.isErc20Hash(token)) delete record.qty_own;
-        return { record, cmd };
+        // erc20 token doesn't have qty_own and data properties
+        if (this.token.isErc20Token(token)) {
+          delete record.qty_in;
+          delete record.data;
+        }
+
+        // it doesn't matter if we can't the type
+        return { record, cmd, change: count, type };
       });
   }
 
+  /**
+   * Save/Create/Update/Delete a token, address pair to PostgreSQL database
+   * @param tracks: AddresBalancesOperation[],
+   * @param provider: Database transaction provider
+   * @returns boolean
+   */
   private async trackBalanceRecords(
-    tracks: { record: Partial<ITokenBalance>; cmd: string }[],
+    tracks: AddresBalancesOperation[],
     provider: any,
   ) {
-    const promises = tracks.map(
-      (track: { record: ITokenBalance; cmd: string }) => {
-        const { record, cmd } = track;
-        const { token, address } = record;
-        const noUpdateRes = { token, address, count: 0 };
-        if (!cmd) return Promise.resolve(noUpdateRes);
-        if (cmd === PG_CMD.create) {
-          return this.pg.createBalanceRecord(record, provider).then(res => {
+    const promises = tracks.map(async (track: AddresBalancesOperation) => {
+      const { record, cmd, ...trackResult } = track;
+      const { token, address } = record;
+      const noUpdateRes = { token, address, ...trackResult };
+      if ((cmd as any) == PG_CMD.nil) return noUpdateRes;
+      if (cmd === PG_CMD.create) {
+        return this.pg.createHolderRecord(record, provider).then(res => {
+          if (res) {
+            return { token, address, ...trackResult };
+          } else process.exit();
+        });
+      }
+      if (cmd === PG_CMD.update) {
+        return this.pg.updateHolderRecord(record, provider).then(res => {
+          if (res) {
+            return { token, address, ...trackResult };
+          } else process.exit();
+        });
+      }
+      if (cmd === PG_CMD.del) {
+        return this.pg
+          .delHolderRecord({ token, address }, provider)
+          .then(res => {
             if (res) {
-              this.cachePairProcessingForOneBlockTime(record);
-              return { token, address, count: 1 };
+              return { token, address, ...trackResult };
             } else process.exit();
           });
-        }
-        if (cmd === PG_CMD.update) {
-          return this.pg.updateBalanceRecord(record, provider).then(res => {
-            if (res) {
-              this.cachePairProcessingForOneBlockTime(record);
-              return noUpdateRes;
-            } else process.exit();
-          });
-        }
-        if (cmd === PG_CMD.del) {
-          return this.pg
-            .delBalanceRecord({ token, address }, provider)
-            .then(res => {
-              if (res) {
-                this.cachePairProcessingForOneBlockTime(record);
-                return { token, address, count: -1 };
-              } else process.exit();
-            });
-        }
-      },
-    );
+      }
+    });
 
     return Promise.all(promises)
-      .then(results => {
+      .then(async operations => {
+        const results = await Promise.all(operations);
         let tokenStatsMap = {};
         let addressStatsMap = {};
         results.map(result => {
-          const { token, address, count } = result;
-          if (tokenStatsMap[token]) tokenStatsMap[token].count += count;
-          else tokenStatsMap[token] = { token, count };
-          if (addressStatsMap[address]) {
-            if (token.length === 42) addressStatsMap[address].erc20 += count;
-            else addressStatsMap[address].fusion += count;
+          const { token, address, change, type } = result;
+          // stats holder's change for a token
+          if (tokenStatsMap[token]) {
+            tokenStatsMap[token].change += change;
           } else {
-            if (token.length === 42) {
-              addressStatsMap[address] = { address, erc20: count, fusion: 0 };
-            } else {
-              addressStatsMap[address] = { address, fusion: count, erc20: 0 };
-            }
+            tokenStatsMap[token] = { token, change };
+          }
+          // stats holding types change for an address
+          if (addressStatsMap[address]) {
+            addressStatsMap[address].change += change;
+          } else {
+            addressStatsMap[address] = { address, change };
+          }
+          if (type) {
+            this.cachePair(type, { token, address });
           }
         });
 
         const tokenMsgs = [];
         Object.keys(tokenStatsMap).map(key => {
           const { count } = tokenStatsMap[key];
-          if (count !== 0) tokenMsgs.push(tokenStatsMap[key]);
+          if (count) tokenMsgs.push(tokenStatsMap[key]);
         });
 
         const addressMsgs = [];
         Object.keys(addressStatsMap).map(key => {
-          const { fusion, erc20 } = addressStatsMap[key];
-          if (fusion || erc20) {
-            addressMsgs.push(addressStatsMap[key]);
-          }
+          const { count } = addressStatsMap[key];
+          if (count) addressMsgs.push(addressMsgs[key]);
         });
         if (tokenMsgs.length) {
           this.workerClient.notifyTokenHoldersChange(tokenMsgs);
@@ -248,15 +326,16 @@ export class AppService extends CustomLogger {
           this.workerClient.notifyAddressHoldingsChange(addressMsgs);
         }
 
+        // I worry if it causes an error because of releasing memory
         Object.keys(tokenStatsMap).map(key => delete tokenStatsMap[key]);
         Object.keys(addressStatsMap).map(key => delete addressStatsMap[key]);
-
         tokenStatsMap = null;
         addressStatsMap = null;
+
         return true;
       })
       .catch(e => {
-        this.logError({ method: 'trackBalanceRecords', e });
+        this.helper.logError({ method: 'trackBalanceRecords', e });
         console.log(e);
         console.log(this.trackBalanceRecords);
         console.log(`\n\n`);
@@ -274,8 +353,8 @@ export class AppService extends CustomLogger {
     }
 
     const { qty, qty_in } = newBalance;
-    const prevQty = +prevBalance.qty || 0;
-    const prevQtyIn = +prevBalance.qty_in || 0;
+    const prevQty = prevBalance.qty || 0;
+    const prevQtyIn = prevBalance.qty_in || 0;
 
     const newQty = qty === undefined ? prevQty : qty;
     const newQtyIn = qty_in === undefined ? prevQtyIn : qty_in;
@@ -289,36 +368,13 @@ export class AppService extends CustomLogger {
     return [...new Set(validAssets)];
   }
 
-  private cachePairProcessingForOneBlockTime(record: Partial<ITokenBalance>) {
-    const { token, address, qty, qty_in } = record;
-    if (qty) this.cacheBalancePair({ token, address });
-    if (qty_in !== undefined) this.cacheTlPair({ token, address });
-  }
-
-  private checkTlPair(pair: { token: string; address: string }) {
-    return this.checkPair('tl_balance', pair);
-  }
-
-  private checkBalancePair(pair: { token: string; address: string }) {
-    return this.checkPair('balance', pair);
-  }
-
-  private cacheTlPair(pair: { token: string; address: string }) {
-    return this.cachePair('tl_balance', pair);
-  }
-
-  private cacheBalancePair(pair: { token: string; address: string }) {
-    this.cachePair('balance', pair);
-  }
-
   private getPairKey(
     type: string,
     pair: { token: string; address: string },
   ): string {
     const { token, address } = pair;
     const key = `${type}:${address}:${token}`;
-    if (type === 'balance') return key;
-    else return key;
+    return key;
   }
 
   private checkPair(
@@ -329,7 +385,10 @@ export class AppService extends CustomLogger {
     return this.redis.getCachedValue(key).then(val => !!val);
   }
 
-  private cachePair(type: string, pair: { token: string; address }): void {
+  private cachePair(
+    type: string,
+    pair: { token: string; address: string },
+  ): void {
     const key = this.getPairKey(type, pair);
     this.redis.cacheValue(key, JSON.stringify(true), 13);
   }

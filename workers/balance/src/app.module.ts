@@ -2,13 +2,11 @@ import { Module, HttpModule } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
-
 import { config } from './config';
 import { TokenModule, TokenService } from './token';
 import { PgService, PgModule } from './pg';
-import { RedisHelperModule } from './redis-helper';
 import { WorkerClientModule } from './worker-client/worker-client.module';
-import { MongoModule } from './mongo/mongo.module';
+import { CommonModule } from './common';
 
 @Module({
   imports: [
@@ -21,9 +19,8 @@ import { MongoModule } from './mongo/mongo.module';
     }),
     PgModule,
     TokenModule,
-    RedisHelperModule,
     WorkerClientModule,
-    MongoModule,
+    CommonModule,
   ],
   controllers: [AppController],
   providers: [AppService, TokenService, PgService],

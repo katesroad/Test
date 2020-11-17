@@ -7,5 +7,10 @@ export interface IToken {
 }
 
 export interface IFusionToken extends IToken {
-  getTokenTlBalance(holder: ITokenHolder): Promise<any[]>;
+  getTokenTlBalance(
+    holder: ITokenHolder,
+  ): Promise<{
+    items?: any[];
+    hasError: boolean;
+  }>;
 }

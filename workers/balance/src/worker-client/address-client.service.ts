@@ -5,7 +5,7 @@ import { AddressHoldingsMsg } from '../models';
 
 @Injectable()
 export class AddressClientService {
-  readonly pattern = 'address:holdings';
+  readonly pattern = 'holdings:change';
 
   constructor(
     @Inject(ADDRESS_SERVICE_NAME) private readonly client: ClientProxy,
