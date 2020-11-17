@@ -27,13 +27,13 @@
             />
           </q-td>
           <q-td key="qty" :props="props">
-            <calc-qty :qty="props.row.qty" :tooltip="true" />
+            <calc-qty :qty="props.row.qty" :fixed="4" :tooltip="true" />
           </q-td>
           <q-td key="qty_in" :props="props">
-            <calc-qty :qty="props.row.qty_in" :tooltip="true" /> 
+            <calc-qty :qty="props.row.qty_in" :fixed="4" :tooltip="true" /> 
           </q-td>
           <q-td key="qty_own" :props="props">
-            <calc-qty :qty="props.row.qty_own"  :tooltip="true" />
+            <calc-qty :qty="props.row.qty_own"  :fixed="4" :tooltip="true" />
           </q-td>
           <q-td key="percentage">
             <span>{{calcPercentage(props.row)}}</span>

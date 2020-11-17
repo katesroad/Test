@@ -46,8 +46,9 @@ export const utils = {
     } else if (value > oneK) {
       return (value / oneK).toFixed(1) + " k";
     }
-    if(value ===0) return 0;
-    else {return value.toFixed(fixed);}
+    if(value <= 0 ) return 0;
+    if(value < Math.pow(10, -4)) return '< 0.0001';
+    return value.toFixed(fixed);
   },
   isFSNToken(hash) {
     return hash === '0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff';

@@ -3,7 +3,7 @@ import axios from "axios";
 const isDEV = process.env.DEV;
 const FSN365_CONFIG = {
   prod: "https://api.fsn365.com",
-  local: "http://192.168.0.117:3800",
+  local: "https://api.fsn365.com",
 };
 const fsn365 = axios.create({
   baseURL: isDEV ? FSN365_CONFIG.local : FSN365_CONFIG.prod,
