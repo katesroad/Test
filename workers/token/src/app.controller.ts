@@ -21,7 +21,7 @@ export class AppController {
   constructor(private readonly service: AppService) {}
 
   // cmd to make stats for token's transaction count, from tx worker
-  @MessagePattern('token:txs')
+  @MessagePattern('txs')
   updateTokenTxsCount(
     @Payload() msgs: TokenTxsCountMsg[],
     @Ctx() ctx: RmqContext,
@@ -49,8 +49,8 @@ export class AppController {
   }*/
 
   // cmd to track fusion/erc20 token issue quantity change, from tx worker
-  @MessagePattern('token:change')
-  updateTokenQuantity(
+  @MessagePattern('supply:change')
+  updateTokenSupply(
     @Payload() msg: TokenChangeMsg,
     @Ctx() ctx: RmqContext,
   ): void {
@@ -62,7 +62,7 @@ export class AppController {
   }
 
   // cmd to make stats for token's holders count, from balance worker
-  @MessagePattern('token:holders')
+  @MessagePattern('holders:change')
   updateTokenHoldersCount(
     @Payload() msgs: TokenHoldersCountMsg[],
     @Ctx() ctx: RmqContext,
