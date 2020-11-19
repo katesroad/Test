@@ -1,4 +1,5 @@
-export interface Erc20TokenInfo {
+// for erc20 token
+export interface TokenMetaInfo {
   hash: string;
   name: string;
   symbol: string;
@@ -6,16 +7,24 @@ export interface Erc20TokenInfo {
   precision: number;
 }
 
-export class Tokenstats {
-  create_at: number;
-  active_at: number;
-  txs: number;
-  holders: number;
+// for native token
+export interface NativeTokenMetaInfo extends TokenMetaInfo {
+  canchange: boolean;
+  info?: any;
 }
 
-export interface TokenInfo extends Erc20TokenInfo, Tokenstats {
-  issuer: string;
-  issue_tx: string;
-  canchange: boolean;
-  info: string; //JSON string
+export type TokenInfo = NativeTokenMetaInfo | TokenMetaInfo;
+
+export class TokenStatsData {
+  txs: number;
+  transfers: number;
+  pair_swap: number;
+  pair_add: number;
+  pair_rm: number;
+  holders: number;
+  active_at: number;
+}
+
+export class TokenStats extends TokenStatsData {
+  token: string;
 }

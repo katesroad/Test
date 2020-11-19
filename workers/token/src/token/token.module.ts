@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TokenService } from './token.service';
-import { MongoModule } from './mongo/mongo.module';
-import { RpcModule } from './rpc/rpc.module';
-import { Erc20Module } from './erc20/erc20.module';
+import { RpcModule } from './rpc';
+import { Erc20Module } from './erc20';
 
 @Module({
-  imports: [RpcModule, Erc20Module, MongoModule],
+  imports: [RpcModule, Erc20Module],
   providers: [TokenService],
   exports: [TokenService],
 })

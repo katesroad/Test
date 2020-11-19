@@ -1,17 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Erc20TokenInfo, TokenInfo } from 'src/models';
-import { CustomLogger } from '../../common/custom-logger';
+import { TokenMetaInfo } from 'src/models';
+import { HelperService } from '../../common';
 import { abi } from './abi';
 
 const Web3 = require('web3');
 
 @Injectable()
-export class Erc20Service extends CustomLogger {
+export class Erc20Service {
+  private retried = 0;
   private web3: any;
 
-  constructor(config: ConfigService) {
-    super(`Erc20Service`);
+  /**
+   * Instantiate web3 provider to get erc20 token information
+   */
+  constructor(config: ConfigService, private readonly helper: HelperService) {
     // https://web3js.readthedocs.io/en/v1.3.0/web3-eth.html#configuration
     const WSS_PROVIDER = config.get('wss_url');
     const provider = new Web3.providers.WebsocketProvider(WSS_PROVIDER, {
@@ -24,6 +27,7 @@ export class Erc20Service extends CustomLogger {
         onTimeout: false,
       },
     });
+    console.log(WSS_PROVIDER);
 
     //reload application to restart
     provider.on('error', () => {
@@ -41,58 +45,50 @@ export class Erc20Service extends CustomLogger {
     this.web3 = new Web3(provider);
   }
 
-  async getTokenInfoByIssueTxHash(hash: string): Promise<Partial<TokenInfo>> {
-    if (hash.length !== 66) return {};
-    this.logInfo({
-      method: 'getTokenInfoByIssueTxHash',
-      data: hash,
-    });
-
-    const { address, issuer } = await this.web3.eth
-      .getTransactionReceipt(hash)
-      .then(data => {
-        if (!data) return {};
-        const { contractAddress, from } = data;
-        return {
-          address: contractAddress.toLowerCase(),
-          issuer: from,
-        };
-      })
-      .catch(e => ({}));
-
-    if (!address) return null;
-
-    const token = await this.getTokenInfoByTokenHash(address);
-    if (token) return { ...token, issuer };
-    else return null;
-  }
-
-  async getTokenInfoByTokenHash(
-    contractAddress: string,
-  ): Promise<Erc20TokenInfo> {
-    const contract = this.getContract(contractAddress);
-    const props = ['symbol', 'name', 'decimals', 'totalSupply'];
+  /**
+   * Get token metadata
+   * @param tokenHash:string
+   * @returns TokenMetaInfo
+   */
+  async getTokenInfo(
+    tokenHash: string,
+    wait?: number,
+  ): Promise<TokenMetaInfo | null> {
+    //
+    if (wait) await this.helper.sleep(wait);
+    const contract = this.getContract(tokenHash);
+    const props = ['name', 'symbol', 'supply', 'decimals'];
     const promises = props.map(prop => this.getErc20Prop(contract, prop));
 
     return Promise.all(promises)
       .then(data => {
-        let [symbol, name, precision, qty] = data;
-        qty = +qty;
-        precision = +precision;
-        qty = qty / Math.pow(10, precision);
-        const token = { symbol, name, precision, qty, hash: contractAddress };
-        return token;
+        const [name, symbol, supply, decimals] = data;
+        const qty = supply / Math.pow(10, decimals);
+        return {
+          hash: tokenHash,
+          name,
+          supply,
+          symbol,
+          precision: decimals,
+          qty,
+        };
       })
       .catch(e => {
-        this.logError({
-          method: 'getTokenInfo',
-          e,
-          data: contractAddress,
-        });
-        return null;
+        this.retried += 1;
+        if (this.retried > 4) {
+          this.helper.logErrorMsg('Failed to get token meta information.');
+          this.helper.logError({ method: 'getTokenInfo', data: tokenHash, e });
+          return null;
+        }
+        return this.getTokenInfo(tokenHash, 50);
       });
   }
 
+  /**
+   * Get erc20 token supply(based on supply and token's decimals)
+   * @param tokenHash:string
+   * @returns number
+   */
   async getTokenSupply(tokenHash: string): Promise<number> {
     const contract = this.getContract(tokenHash);
     const supply = await this.getErc20Prop(contract, 'totalSupply');
@@ -105,6 +101,7 @@ export class Erc20Service extends CustomLogger {
   }
 
   private getErc20Prop(contract: any, prop: string): Promise<any> {
+    console.log(contract);
     return new Promise((resolve, reject) => {
       contract.methods[prop]().call((err, res) => {
         if (err) {

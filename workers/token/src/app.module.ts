@@ -3,9 +3,9 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { config } from './config';
 import { AppController } from './app.controller';
-import { RedisHelperModule } from './redis-helper/redis-helper.module';
-import { PgModule } from './pg/pg.module';
+import { PgModule } from './pg';
 import { TokenModule } from './token';
+import { CommonModule } from './common';
 
 @Module({
   imports: [
@@ -14,8 +14,8 @@ import { TokenModule } from './token';
       load: [config],
     }),
     PgModule,
-    RedisHelperModule,
     TokenModule,
+    CommonModule,
   ],
   controllers: [AppController],
   providers: [AppService],

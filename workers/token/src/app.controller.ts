@@ -7,11 +7,10 @@ import {
 } from '@nestjs/microservices';
 import { AppService } from './app.service';
 import {
-  TokenTxsCountMsg,
-  TokenHoldersCountMsg,
-  // TokenErc20Msg,
   TokenChangeMsg,
-  // TokenGenerationMsg,
+  HoldersChangeMsg,
+  TokenHoldersMsg,
+  TonkenStatsMsg,
 } from './models';
 
 @Controller()
@@ -21,32 +20,18 @@ export class AppController {
   constructor(private readonly service: AppService) {}
 
   // cmd to make stats for token's transaction count, from tx worker
-  @MessagePattern('txs')
+  @MessagePattern('stats')
   updateTokenTxsCount(
-    @Payload() msgs: TokenTxsCountMsg[],
+    @Payload() msgs: TonkenStatsMsg[],
     @Ctx() ctx: RmqContext,
   ): void {
     const startAt = Date.now();
-    this.service.trackTokensStatsInBatch(msgs).then(res => {
+    this.service.trackTokenTxsStatsInBatch(msgs).then(res => {
       if (res) {
         this.ackMsg(ctx, { startAt, size: msgs.length });
       } else process.exit();
     });
   }
-
-  // cmd to track fusion token generation, from tx worker
-  // no longer in use as token creation happens at tx worker
-  /* @MessagePattern('token:new')
-  createToken(
-    @Payload() msg: TokenGenerationMsg,
-    @Ctx() ctx: RmqContext,
-  ): void {
-    const startAt = Date.now();
-    this.service.createTokenByTxHash(msg.tx).then(res => {
-      if (res) this.ackMsg(ctx, { startAt, size: 1 });
-      else process.exit();
-    });
-  }*/
 
   // cmd to track fusion/erc20 token issue quantity change, from tx worker
   @MessagePattern('supply:change')
@@ -61,31 +46,32 @@ export class AppController {
     });
   }
 
-  // cmd to make stats for token's holders count, from balance worker
+  // track token's holder count change
   @MessagePattern('holders:change')
-  updateTokenHoldersCount(
-    @Payload() msgs: TokenHoldersCountMsg[],
+  trackHoldersChange(
+    @Payload() msgs: HoldersChangeMsg[],
     @Ctx() ctx: RmqContext,
   ): void {
     const startAt = Date.now();
-    this.service.trackTokensHoldersCountInBatch(msgs).then(res => {
+    this.service.trackHoldersChangeInBatch(msgs).then(res => {
       if (res) this.ackMsg(ctx, { startAt, size: msgs.length });
       else process.exit();
     });
   }
 
-  // cmd to track erc20 token information, from tx worker
-  // no longer in use as token creation happens at tx worker
-  /*
-  @MessagePattern('token:erc20')
-  trackErc20Token(@Payload() msg: TokenErc20Msg, @Ctx() ctx: RmqContext): void {
+  // track token holders count
+  @MessagePattern('holders')
+  updateTokenHolders(
+    @Payload() msgs: TokenHoldersMsg[],
+    @Ctx() ctx: RmqContext,
+  ): void {
     const startAt = Date.now();
-    this.service.createErc20Token(msg).then(res => {
-      if (res) this.ackMsg(ctx, { startAt, size: 1 });
+    this.service.trackHoldersInBatch(msgs).then(res => {
+      if (res) this.ackMsg(ctx, { startAt, size: msgs.length });
       else process.exit();
     });
   }
-*/
+
   private ackMsg(ctx: RmqContext, stats: { startAt: number; size: number }) {
     const rawMsg = ctx.getMessage();
     const channel = ctx.getChannelRef();
@@ -95,7 +81,8 @@ export class AppController {
     const msg = JSON.parse(rawMsg.content.toString());
 
     this.logger.log(
-      `processed ${size} tokens, avgCost: ${avgCost} ms, cost ${cost} ms.`,
+      `pattern: ${msg.pattern}\n`,
+      `${size} tokens, avgCost: ${avgCost} ms, cost ${cost} ms.`,
     );
     this.logger.log(`Ack ${msg.pattern}`);
 

@@ -1,13 +1,10 @@
-export class TokenTxsCountMsg {
-  token: string;
-  txs: number;
-  create_at: number;
-  active_at: number;
-}
+import { TokenStats, TokenStatsData } from './token.model';
 
-export interface TokenHoldersCountMsg {
+export type TonkenStatsMsg = TokenStats;
+
+export interface TokenHoldersMsg {
   token: string;
-  count: 1 | -1;
+  holders: number;
 }
 
 export interface TokenErc20Msg {
@@ -19,6 +16,7 @@ export interface TokenChangeMsg {
   token: string;
 }
 
-export interface TokenGenerationMsg {
-  tx: string;
+export interface HoldersChangeMsg {
+  token: string;
+  change: number;
 }

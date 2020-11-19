@@ -1,285 +1,298 @@
 import { Injectable } from '@nestjs/common';
-import { PgService } from './pg/pg.service';
 import {
-  TokenTxsCountMsg,
-  TokenInfo,
-  TokenHoldersCountMsg,
-  TokenErc20Msg,
-  Tokenstats,
+  TokenStats,
   DB_CMD,
-  DbOperation,
+  HoldersChangeMsg,
+  TokenHoldersMsg,
+  TokenStatsData,
+  DbStatsOperation,
+  TonkenStatsMsg,
 } from './models';
-import { CustomLogger } from './common';
 import { TokenService } from './token';
-import { RedisHelperService } from './redis-helper';
+import { HelperService, RedisHelperService } from './common';
+import { PgTokenStatsService, PgTokensService, PgService } from './pg';
 
 @Injectable()
-export class AppService extends CustomLogger {
+export class AppService {
   constructor(
-    private pg: PgService,
-    private token: TokenService,
+    private readonly pgStats: PgTokenStatsService,
+    private readonly pgToken: PgTokensService,
+    private readonly pg: PgService,
+    private readonly token: TokenService,
     private readonly redis: RedisHelperService,
-  ) {
-    super('AppService');
-  }
+    private readonly helper: HelperService,
+  ) {}
 
-  async trackTokensStatsInBatch(msgs: TokenTxsCountMsg[]): Promise<boolean> {
-    if (msgs.length === 0) return true;
-    const provider = this.pg.getTrxProvider();
-    const getOperations = msgs.map(stats =>
-      this.getTokenStatsOperation(stats, provider),
-    );
-    const operations: DbOperation[] = await Promise.all(
-      getOperations,
-    ).catch(e => []);
-
-    if (operations.length === 0) return false;
-
-    return this.doDbOpertions(operations, provider);
-  }
-
-  private async getTokenStatsOperation(
-    stats: TokenTxsCountMsg,
-    provider: any,
-  ): Promise<DbOperation> {
-    const { token, txs, active_at, create_at } = stats;
-
-    const prevRecord = await this.getPrevRecord(token, provider);
-    if (prevRecord) {
-      const tokenData: Partial<TokenInfo> = { hash: token, active_at, txs };
-      tokenData.txs += +prevRecord.txs || 0;
-      if (!prevRecord.create_at) tokenData.create_at = create_at;
-      return { record: tokenData, cmd: DB_CMD.update };
-    }
-
-    const tokenCreationData = await this.getTokenDataByTokenHash(token);
-
-    if (tokenCreationData) {
-      const tokenData: Partial<TokenInfo> = {
-        ...tokenCreationData,
-        hash: token,
-        active_at,
-      };
-      if (!tokenData.create_at) {
-        tokenData.create_at = create_at;
-      }
-      return { record: tokenCreationData, cmd: DB_CMD.create };
-    }
-    return { record: { hash: token }, cmd: '' };
-  }
-
-  async trackTokensHoldersCountInBatch(
-    msgs: TokenHoldersCountMsg[],
+  /**
+   * Update token transaction's stats, active time in batch
+   * @param msgs: TokenStatsMsg[]
+   * @returns boolean
+   */
+  async trackTokenTxsStatsInBatch(
+    msgs: Partial<TonkenStatsMsg>[],
   ): Promise<boolean> {
     if (msgs.length === 0) return true;
 
     const provider = this.pg.getTrxProvider();
-    const getOperations = msgs.map(stats =>
-      this.getTokenHoldersOperation(stats, provider),
+    const operations = await Promise.all(
+      msgs.map(msg => this.getTokenTxsStatsOperation(msg, provider)),
     );
-    const operations: DbOperation[] = await Promise.all(
-      getOperations,
-    ).catch(e => []);
+    return this.doTokenStatsOpertions(operations, provider);
+  }
+
+  /**
+   * Get record operation way
+   * @param stats: TokenStatsCountMsg
+   * @returns {record: Partial<TokenInfo>, cmd: string};
+   */
+  private async getTokenTxsStatsOperation(
+    statsMsg: Partial<TonkenStatsMsg>,
+    provider: any,
+  ): Promise<DbStatsOperation> {
+    const { token, ...stats } = statsMsg;
+
+    const prevRecord = await this.getTokenPrevStats(token, provider);
+    if (!prevRecord) {
+      return { cmd: DB_CMD.create, record: { token, ...stats } };
+    }
+
+    const record: Partial<TokenStats> = { token, ...prevRecord };
+    Object.keys(stats).map(field => {
+      if (stats[field]) {
+        record[field] = (prevRecord[field] || 0) + stats[field];
+      }
+    });
+    if (stats.active_at) record.active_at = stats.active_at;
+    else delete stats.active_at;
+    return { cmd: DB_CMD.update, record };
+  }
+
+  /**
+   * Update token holder's count in batch
+   * @param msgs: TokenHoldersMsg[]
+   * @returns boolean
+   */
+  async trackHoldersInBatch(msgs: TokenHoldersMsg[]): Promise<boolean> {
+    if (msgs.length === 0) return true;
+
+    const provider = this.pg.getTrxProvider();
+    const operations = await Promise.all(
+      msgs.map(msg => this.getTokenHolderOpertion(msg, provider)),
+    ).catch(e => {
+      this.helper.logError({
+        method: 'trackHoldersInBatch',
+        e,
+        data: msgs,
+      });
+      return [];
+    });
 
     if (operations.length === 0) return false;
 
-    return this.doDbOpertions(operations, provider);
+    return this.doTokenStatsOpertions(operations, provider);
   }
 
-  private async getTokenHoldersOperation(
-    stats: TokenHoldersCountMsg,
-    provider,
-  ): Promise<DbOperation> {
-    const { token, count } = stats;
-    const prevRecord = await this.getPrevRecord(token, provider);
+  /**
+   * Get the operation way for a single token
+   * @param: msg TokenHoldersMsg
+   * @returns operation: DbStatsOperation
+   */
+  private async getTokenHolderOpertion(
+    msg: TokenHoldersMsg,
+    provider: any,
+  ): Promise<DbStatsOperation> {
+    const { token, holders } = msg;
 
-    if (prevRecord) {
-      const tokenData: Partial<TokenInfo> = { hash: token, holders: count };
-      tokenData.holders += +prevRecord.holders || 0;
-      return { record: tokenData, cmd: DB_CMD.update };
+    const noOperation = { cmd: DB_CMD.nil, record: null };
+    if (!this.token.isValidTokenHash(token)) return noOperation;
+
+    const isExist = await this.getTokenPrevStats(token, provider);
+    if (isExist) {
+      return { cmd: DB_CMD.update, record: { token, holders } };
     }
-
-    // create token then update token
-    this.logInfoMsg(`${token} is not in pg, try creating one.`);
-
-    const tokenCreationData = await this.getTokenDataByTokenHash(token);
-
-    if (tokenCreationData) {
-      const tokenData = { ...tokenCreationData, holders: count };
-      return { record: tokenData, cmd: DB_CMD.create };
-    }
-    return { record: { hash: token }, cmd: '' };
+    return { cmd: DB_CMD.create, record: { token, holders } };
   }
 
-  // create new token issued on fusion
-  async createTokenByTxHash(txHash: string): Promise<boolean> {
-    const token = await this.token
-      .getTokenByTxHash(txHash, 'fusion')
-      .catch(e => {
-        this.logError({ method: 'createTokenByTxHash', e });
-        return null;
+  /**
+   * Update token holders count based on change quantity in batch
+   * @param msgs: HoldersChangeMsg[]
+   * @returns boolean
+   */
+  async trackHoldersChangeInBatch(msgs: HoldersChangeMsg[]): Promise<boolean> {
+    if (msgs.length === 0) return true;
+
+    const provider = this.pg.getTrxProvider();
+    const operations = await Promise.all(
+      msgs.map(msg => this.getHoldersChangeOperation(msg, provider)),
+    ).catch(e => {
+      this.helper.logError({
+        method: 'trackHoldersChangeInBatch',
+        e,
+        data: msgs,
       });
+      return [];
+    });
+    if (operations.length === 0) return false;
 
-    // no data, ack message directly
-    if (!token) {
-      return true;
-    }
-
-    const provider = this.pg.getTrxProvider();
-    const trx = await provider();
-
-    // in db, ack message directly
-    const prevRecord = await this.pg.checkExistence(token.hash, provider);
-    let result: boolean;
-    if (prevRecord) {
-      result = await this.pg.updateToken(token, provider);
-    } else {
-      result = await this.pg.createToken(token, provider);
-    }
-
-    if (result) {
-      trx.commit();
-      this.cacheTokenStatsToRedis(token);
-    } else {
-      trx.rollback();
-    }
-    return result;
+    return this.doTokenStatsOpertions(operations, provider);
   }
 
-  // create Erc20 token from tx worker
-  async createErc20Token(data: TokenErc20Msg): Promise<boolean> {
-    const { tx, timestamp } = data;
-    const token: Partial<TokenInfo> = await this.token.getTokenByTxHash(
-      tx,
-      'erc20',
-    );
+  /**
+   * Update token holders count based on change quantity
+   * @param msg: HoldersChangeMsg
+   * @returns boolean
+   */
+  private async getHoldersChangeOperation(
+    msg: HoldersChangeMsg,
+    provider: any,
+  ): Promise<DbStatsOperation> {
+    const { token, change } = msg;
 
-    if (!token) return true;
+    const noOperation = { cmd: DB_CMD.nil, record: null };
+    if (change === 0 || !this.token.isValidTokenHash(token)) {
+      return noOperation;
+    }
 
-    token.create_at = timestamp;
-    token.issue_tx = data.tx;
-
-    const provider = this.pg.getTrxProvider();
-    const trx = await provider();
-
-    const prevRecord = await this.pg.checkExistence(token.hash, provider);
-    let result: boolean;
+    const prevRecord = await this.getTokenPrevStats(token, provider);
     if (prevRecord) {
-      result = await this.pg.updateToken(token, provider);
-    } else {
-      result = await this.pg.createToken(token, provider);
+      const holders = change + prevRecord.holders;
+      const record = { holders, token };
+      return { cmd: DB_CMD.update, record };
     }
-    if (result) {
-      trx.commit();
-      this.cacheTokenStatsToRedis(token);
-    } else {
-      trx.rollback();
-    }
-    return result;
+
+    return { cmd: DB_CMD.create, record: { token, holders: change } };
   }
 
-  // track fusion token quantity change cmd
-  async updateTokenSupply(token: string): Promise<boolean> {
-    const qty = await this.token.getTokenSupply(token);
-    if (qty === -1 || isNaN(qty)) {
-      return true;
-    }
+  /**
+   * Update token supply quantity
+   * @param tokenHash:string
+   * @returns boolean
+   */
+  async updateTokenSupply(tokenHash: string): Promise<boolean> {
+    const qty = await this.token.getTokenSupply(tokenHash);
+
+    if (qty === undefined) return true;
 
     const provider = this.pg.getTrxProvider();
-    const isExist = await this.pg.checkExistence(token, provider);
-    let result: boolean;
+    const isExist = await this.pgToken.checkTokenRecord(tokenHash, provider);
+    let res: boolean;
 
     if (!isExist) {
-      const tokenData = await this.token.getTokenInfoByTokenHash(token);
-      if (tokenData) {
-        result = await this.pg.createToken(tokenData, provider);
-      } else {
-        result = true;
-      }
+      const tokenData = await this.token.getTokenInfo(tokenHash);
+      if (tokenData)
+        res = await this.pgToken.createTokenRecord(tokenData, provider);
+      else res = true;
     } else {
-      result = await this.pg.updateToken({ hash: token, qty }, provider);
+      res = await this.pgToken.updateTokenRecord(
+        { hash: tokenHash, qty },
+        provider,
+      );
     }
 
     const trx = await provider();
-    if (result) trx.commit();
+    if (res) trx.commit();
     else trx.rollback();
 
-    return result;
+    return res;
   }
 
-  // when updating token's txs or hodlers, create token if there is none in DB
-  private async getTokenDataByTokenHash(
-    tokenHash: string,
-  ): Promise<Partial<TokenInfo>> {
-    return this.token.getTokenInfoByTokenHash(tokenHash);
-  }
-
-  // cache token stats information
-  // if data continue growing, extract cache to a single service
-  private async cacheTokenStatsToRedis(tokenData: Partial<TokenInfo>) {
-    const { txs, active_at, create_at, holders, hash } = tokenData;
-    const stats: Partial<Tokenstats> = {};
-    if (txs) stats.txs = txs;
-    if (active_at) stats.active_at = active_at;
-    if (create_at) stats.create_at = create_at;
-    if (holders) stats.holders = holders;
-    const key = this.getTokenStatsKey(hash);
-    const prevStats: Partial<Tokenstats> = await this.getTokenStatsFromRedisCache(
-      hash,
-    );
-    const newStats = { ...prevStats, ...stats };
-    this.redis.cacheValue(key, JSON.stringify(newStats));
-  }
-
-  private getTokenStatsFromRedisCache(
-    token: string,
-  ): Promise<Partial<Tokenstats>> {
-    const key = this.getTokenStatsKey(token);
-    return this.redis.getCachedValue(key).then(val => JSON.parse(val));
-  }
-
-  private getTokenStatsKey(token: string): string {
-    return `token:${token}:stats`;
-  }
-
-  // get token stats information
-  private async getPrevRecord(
-    token: string,
-    provider,
-  ): Promise<Partial<TokenInfo>> {
-    const tokenInCache = await this.getTokenStatsFromRedisCache(token);
-    if (tokenInCache) return tokenInCache;
-    return this.pg.checkExistence(token, provider);
-  }
-
-  private async doDbOpertions(
-    operations: DbOperation[],
-    provider,
+  /**
+   * Create or update a token record in PostgreSQL DB
+   * @param operations: DbOperations[], provider: knex transaction providedr
+   * @returns boolean
+   */
+  private async doTokenStatsOpertions(
+    operations: DbStatsOperation[],
+    provider: any,
   ): Promise<boolean> {
     if (operations.length === 0) return true;
 
     const trx = await provider();
     const doOperations = operations.map(operation => {
       const { record, cmd } = operation;
-      if (cmd === DB_CMD.create) return this.pg.createToken(record, provider);
-      if (cmd === DB_CMD.update) return this.pg.updateToken(record, provider);
+      if (cmd === DB_CMD.create)
+        return this.pgStats.createStatsRecord(record, provider);
+      if (cmd === DB_CMD.update)
+        return this.pgStats.updateStatsRecord(record, provider);
       return Promise.resolve(true);
     });
 
-    const done = await Promise.all(doOperations)
+    const res = await Promise.all(doOperations)
       .then(results => !new Set(results).has(false))
       .catch(e => false);
-    if (done) {
+    if (res) {
       operations.map(operation => {
         const { record, cmd } = operation;
         if (cmd) {
-          this.cacheTokenStatsToRedis(record);
+          const { token, ...stats } = record;
+          this.setTokenStatsToCahe(token, stats);
         }
       });
       trx.commit();
     } else {
       trx.rollback();
     }
-    return done;
+    return res;
+  }
+
+  /**
+   * Get token previous stats data
+   * @param tokenHash string
+   * @param provider Knex transaction provider
+   * @returns Partial<TokenStatsData>
+   */
+  private async getTokenPrevStats(
+    tokenHash: string,
+    provider: any,
+  ): Promise<Partial<TokenStatsData>> {
+    const stats = await this.getTokenStatsFromCache(tokenHash);
+    if (stats) return stats;
+    return this.pgStats.checkStatsRecord(tokenHash, provider);
+  }
+
+  /**
+   * Save token stats to redis
+   * @param tokenHash:string token's hash string
+   * @param stats: Partial<TokenStatsData>
+   */
+  private async setTokenStatsToCahe(
+    tokenHash: string,
+    stats: Partial<TokenStatsData>,
+  ): Promise<void> {
+    const key = this.getTokenStatsKey(tokenHash);
+    const prevStats = await this.getTokenStatsFromCache(key);
+    const newStats = { ...prevStats, ...stats };
+    this.redis.cacheValue(key, JSON.stringify(newStats));
+  }
+
+  /**
+   * Get token stats data from Redis
+   * @param tokenHash:string
+   */
+  private async getTokenStatsFromCache(
+    tokenHash: string,
+  ): Promise<Partial<TokenStatsData> | null> {
+    const key = this.getTokenStatsKey(tokenHash);
+    const stats = await this.redis
+      .getCachedValue(key)
+      .then(stats => JSON.parse(stats));
+    if (!stats) return null;
+    const tokenStats: Partial<TokenStatsData> = {};
+    const fields = [
+      'pair_swap',
+      'pair_add',
+      'pair_rm',
+      'txs',
+      'transfers',
+      'holders',
+    ];
+    fields.map(field => {
+      tokenStats[field] = +stats[field] || 0;
+    });
+    return tokenStats;
+  }
+
+  private getTokenStatsKey(token: string): string {
+    return `token:${token}:stats`;
   }
 }
