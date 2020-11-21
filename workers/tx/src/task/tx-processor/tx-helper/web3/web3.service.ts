@@ -1,18 +1,20 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TokenMetaData, TokenSnapshot } from '../../../../models';
-import { CustomLogger } from '../../../../common';
 import { abi } from './abi';
+import { HelperService } from '../../../../helper';
 
 const Web3 = require('web3');
 
 @Injectable()
-export class Web3Service extends CustomLogger {
+export class Web3Service {
   private retried = 0;
   private web3: any;
 
-  constructor(private readonly config: ConfigService) {
-    super('Erc20TokenService');
+  constructor(
+    private readonly config: ConfigService,
+    private readonly: HelperService,
+  ) {
     this.init();
   }
 

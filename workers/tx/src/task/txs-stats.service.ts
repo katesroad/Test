@@ -1,11 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { RedisHelperService, HelperService } from '../helper';
+import { RedisHelperService, HelperService, NetworkService } from '../helper';
 import { MongoService } from './mongo/mongo.service';
 import { PgService } from './pg';
-import { CustomLogger } from '../common';
 
 @Injectable()
-export class TxsStatsService extends CustomLogger {
+export class TxsStatsService {
   private upToDate: boolean = false;
 
   constructor(
@@ -13,9 +12,8 @@ export class TxsStatsService extends CustomLogger {
     private mongo: MongoService,
     private pg: PgService,
     private helper: HelperService,
-  ) {
-    super('TxsStatsService');
-  }
+    private network: NetworkService,
+  ) {}
 
   private async onApplicationBootstrap(): Promise<any> {
     await this.helper.sleep(14000);
@@ -26,15 +24,15 @@ export class TxsStatsService extends CustomLogger {
 
   async trackTxsStats(): Promise<void> {
     const range = await this.getTxsStatsRange();
-    let networkTime = await this.helper.getNetworkTimestamp();
+    let networkTime = await this.network.getNetworkTimestamp();
 
     if (range.$lte > networkTime) {
-      this.logInfoMsg(`Catched up latest network time.`);
+      this.helper.logInfoMsg(`Catched up latest network time.`);
       this.upToDate = true;
       return;
     }
 
-    this.logger.verbose({
+    this.helper.verbose({
       ...range,
       networkTime,
     });
@@ -43,11 +41,11 @@ export class TxsStatsService extends CustomLogger {
     const { stats_at } = statsData;
     const statsIsSaved = await this.pg.saveTxsStats(statsData);
     if (statsIsSaved) {
-      this.logInfoMsg(` stats for range: ${range.$gt}~${range.$lte}`);
+      this.helper.logInfoMsg(` stats for range: ${range.$gt}~${range.$lte}`);
       this.setTxsStatsPrevTrackAt(stats_at);
     } else {
-      this.logErrorMsg(`Failed to save stats to PostgreSQL`);
-      this.logErrorMsg(`Retrying make txs stats...`);
+      this.helper.logErrorMsg(`Failed to save stats to PostgreSQL`);
+      this.helper.logErrorMsg(`Retrying make txs stats...`);
     }
 
     this.trackTxsStats();
@@ -75,7 +73,7 @@ export class TxsStatsService extends CustomLogger {
     let trackAt = await this.pg.getTxStatsTrackStartTime();
     if (!trackAt) trackAt = await this.mongo.getTxStatsTrackStartTime();
 
-    this.logInfoMsg(`Txs stats tracking start at timestamp:${trackAt}`);
+    this.helper.logInfoMsg(`Txs stats tracking start at timestamp:${trackAt}`);
 
     return +trackAt;
   }

@@ -2,14 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { PgService } from './pg';
 import { TxProcessorService } from './tx-processor';
 import { MongoService } from './mongo/mongo.service';
-import { CustomLogger } from '../common';
 import { ProcessedTx, TxsRange } from '../models';
-import { RedisHelperService, HelperService } from '../helper';
+import { RedisHelperService, HelperService, NetworkService } from '../helper';
 import { WorkerClientService } from './worker-client';
 import { NotificationService } from './notification-service';
 
 @Injectable()
-export class TxsTrackService extends CustomLogger {
+export class TxsTrackService {
   private step = 10;
   private density = 10;
   private catchUp = false;
@@ -24,12 +23,11 @@ export class TxsTrackService extends CustomLogger {
     private workerClient: WorkerClientService,
     private notificationService: NotificationService,
     private helper: HelperService,
-  ) {
-    super('TxsTrackService');
-  }
+    private network: NetworkService,
+  ) {}
 
   private async onApplicationBootstrap(): Promise<any> {
-    this.logInfoMsg(`Is waiting latest network cached in Redis...`);
+    this.helper.logInfoMsg(`Is waiting latest network cached in Redis...`);
     await this.helper.sleep(13000);
     const trackAt = await this.getTxInitialTrackAt();
     this.setTxPrevTrackAt(trackAt);
@@ -40,8 +38,8 @@ export class TxsTrackService extends CustomLogger {
     const startAt = Date.now();
     const range = await this.getTxsTrackRange();
 
-    let networkHeight = await this.helper.getNetworkHeight();
-    this.logger.verbose({
+    let networkHeight = await this.network.getNetworkHeight();
+    this.helper.verbose({
       range,
       step: this.step,
       prevSize: this.size,
@@ -54,7 +52,7 @@ export class TxsTrackService extends CustomLogger {
 
     let state: any = null;
     if (this.catchUp) {
-      const { height, txs } = await this.helper.getNetworkState();
+      const { height, txs } = await this.network.getNetworkLBk();
       state = { height, txs };
     }
     const { rawTxs, syncHeight } = await this.mongo.getRawTxsForRange(
@@ -78,9 +76,9 @@ export class TxsTrackService extends CustomLogger {
         await this.notificationService.makeStatsForTxs(txs);
         this.workerClient.notifyTxStats({ txs: txsCount });
       } else {
-        this.logErrorMsg(`Failed to save txs to pg.`);
-        this.logErrorMsg(`Will retry this range`);
-        this.logErrorMsg(`Retrying...`);
+        this.helper.logErrorMsg(`Failed to save txs to pg.`);
+        this.helper.logErrorMsg(`Will retry this range`);
+        this.helper.logErrorMsg(`Retrying...`);
         return this.trackTxs();
       }
     } else {
@@ -89,13 +87,13 @@ export class TxsTrackService extends CustomLogger {
     }
 
     if (this.catchUp) {
-      this.logInfoMsg(`Is waiting next block ...`);
+      this.helper.logInfoMsg(`Is waiting next block ...`);
       await this.helper.sleep(1300 * 5);
     } else {
       let sleep = txs.length * 12;
       sleep = Math.max(100, sleep);
-      sleep = Math.min(2500, sleep);
-      this.logInfoMsg(`wait ${sleep} ms to avoid rabbitMQ congestion`);
+      sleep = Math.min(500, sleep);
+      this.helper.logInfoMsg(`wait ${sleep} ms to avoid rabbitMQ congestion`);
       if (txs.length) {
         await this.helper.sleep(sleep);
       }
@@ -117,7 +115,7 @@ export class TxsTrackService extends CustomLogger {
   }
 
   private setTxPrevTrackAt(height: number): void {
-    this.logInfoMsg(`Set track at ${height}`);
+    this.helper.logInfoMsg(`Set track at ${height}`);
     const trackAtKey = this.getTrackAtKey();
     this.redis.cacheValue(trackAtKey, height);
   }
@@ -134,7 +132,7 @@ export class TxsTrackService extends CustomLogger {
     else if (this.density >= 1) this.step = 10;
     else this.step = Math.floor(Math.random() * 10 + 5);
     if ($gt >= 2300000) this.step = Math.min(10, this.step);
-    const { height } = await this.helper.getNetworkState();
+    const { height } = await this.network.getNetworkLBk();
     let $lte = Math.min(height, $gt + this.step);
     if ($lte === (+height as number)) {
       this.catchUp = true;
