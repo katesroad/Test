@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { RawTx, TxAssetsAndData } from '../../models';
-import { PgService } from '../pg';
+import { PgService, PgSwapService } from '../pg';
 import { WorkerClientService } from '../worker-client';
 import { TxHelperService } from './tx-helper';
 
@@ -8,6 +8,7 @@ import { TxHelperService } from './tx-helper';
 export class SwapService {
   constructor(
     private workerClient: WorkerClientService,
+    private pgSwap: PgSwapService,
     private pg: PgService,
     private helper: TxHelperService,
   ) {}
@@ -108,11 +109,11 @@ export class SwapService {
   }
 
   private getSwap(swap: string, provider) {
-    return this.pg.getSwap(swap, provider);
+    return this.pgSwap.getSwap(swap, provider);
   }
 
   private trackSwap(swapData: any, provider: any): Promise<boolean> {
-    return this.pg.trackSwap(swapData, provider);
+    return this.pgSwap.trackSwap(swapData, provider);
   }
 
   private getTokenSymbol(token: string): Promise<string> {

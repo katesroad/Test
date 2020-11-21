@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { InjectKnex, Knex } from 'nestjs-knex';
-import { ProcessedTx, PgTx, RangeTxsStats } from '../../models';
+import { ProcessedTx, PgTx } from '../../models';
 import { HelperService } from '../../helper';
 
 @Injectable()
-export class PgService {
+export class PgTxsService {
   constructor(
     @InjectKnex() private knex: Knex,
     private readonly helper: HelperService,
@@ -27,34 +27,6 @@ export class PgService {
           this.helper.logInfoMsg(`Tx track start height from pg:${startAt}.`);
           return startAt;
         }
-      });
-  }
-
-  getTxStatsTrackStartTime(): Promise<number> {
-    this.helper.logInfoMsg(`Getting txs stats start time from pg.`);
-    return this.knex('txs_stats')
-      .select('stats_at')
-      .orderBy('stats_at', 'desc')
-      .limit(1)
-      .first()
-      .then((record: { stats_at: number }) => {
-        if (record) return record.stats_at;
-      });
-  }
-
-  async saveTxsStats(statsData: RangeTxsStats): Promise<boolean> {
-    const { stats_at, stats } = statsData;
-    const startAt = Date.now();
-    return this.knex(`txs_stats`)
-      .insert({ stats_at, stats: JSON.stringify(stats) })
-      .then(() => {
-        const cost = Date.now() - startAt;
-        this.helper.logInfoMsg(`Saved txs stats, cost ${cost} ms`);
-        return true;
-      })
-      .catch(e => {
-        this.helper.logError({ method: `saveTxsStats`, e, data: statsData });
-        return false;
       });
   }
 
@@ -108,24 +80,6 @@ export class PgService {
       });
   }
 
-  async getSwap(swapID: string, provider: any) {
-    const trx = await provider();
-    return trx
-      .select('from_tokens', 'to_tokens', 'owner')
-      .from('swaps')
-      .where({ hash: swapID })
-      .first()
-      .limit(1)
-      .then(record => {
-        const { from_tokens = [], to_tokens = [], owner = '' } = record || {};
-        return { FromAssetID: from_tokens, ToAssetID: to_tokens, owner };
-      })
-      .catch(e => {
-        this.helper.logError({ method: 'getSwap', e });
-        process.exit();
-      });
-  }
-
   private async saveTokenTxIdRecords(
     records: { tx_id: string; token: string }[],
     provider: any,
@@ -137,49 +91,6 @@ export class PgService {
       .into('tx_token')
       .then(() => true)
       .catch(e => false);
-  }
-
-  async trackSwap(swap: any, provider: any) {
-    const trx = await provider();
-    const { hash, ...swapData } = swap;
-    const isExist = await trx
-      .from('swaps')
-      .where({ hash })
-      .select('hash')
-      .limit(1)
-      .first()
-      .catch(e => {
-        console.log(e);
-        process.exit();
-      });
-
-    if (isExist || !swapData.owner) {
-      return trx
-        .update(swapData)
-        .from('swaps')
-        .where({ hash })
-        .then(() => {
-          this.helper.logInfoMsg(`updated swap ${hash}`);
-          return true;
-        })
-        .catch(e => {
-          this.helper.logErrorMsg(`update swap ${hash} failed`);
-          console.log(e);
-          return false;
-        });
-    }
-    return trx
-      .insert(swap)
-      .into('swaps')
-      .then(() => {
-        this.helper.logInfoMsg(`created swap ${hash}`);
-        return true;
-      })
-      .catch(e => {
-        this.helper.logErrorMsg(`create swap ${hash} failed`);
-        console.log(e, swap);
-        return false;
-      });
   }
 
   private processTxs(txs: ProcessedTx[]): PgTx[] {
