@@ -53,14 +53,4 @@ export class NetworkService {
   private setNetworkTimestamp(timestamp: number): void {
     this.redis.cacheValue('network:timestamp', timestamp);
   }
-
-  async sleep(ms: number): Promise<void> {
-    return new Promise(resolve => {
-      let t1 = setTimeout(() => {
-        clearTimeout(t1);
-        t1 = null;
-        resolve();
-      }, ms);
-    });
-  }
 }
