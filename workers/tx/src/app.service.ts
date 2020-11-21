@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { HelperService } from './helper';
+import { NetworkService } from './helper';
 import { TaskService } from './task';
 
 @Injectable()
 export class AppService {
-  constructor(private task: TaskService, private helper: HelperService) {}
+  constructor(private task: TaskService, private network: NetworkService) {}
 
   async makeNetworkTxsStats(blockData: {
     timestamp: number;
@@ -12,7 +12,7 @@ export class AppService {
     transactions: string[];
   }): Promise<void> {
     const { number, timestamp, transactions = [] } = blockData;
-    this.helper.updateNetworkState({
+    this.network.updateNetworkState({
       number,
       timestamp,
       txs: transactions.length,
