@@ -1,13 +1,16 @@
 import { Injectable, HttpService } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { CustomLogger } from '../../common';
+import { HelperService } from './helper.service';
 
 @Injectable()
-export class RpcHelperService extends CustomLogger {
+export class RpcHelperService {
   private rpcServer: string;
 
-  constructor(config: ConfigService, private http: HttpService) {
-    super('RpcHelperService');
+  constructor(
+    config: ConfigService,
+    private http: HttpService,
+    private helper: HelperService,
+  ) {
     this.rpcServer = config.get('rpcServer');
   }
 
@@ -29,7 +32,7 @@ export class RpcHelperService extends CustomLogger {
       .then(res => res.data)
       .then(data => data.result)
       .catch(e => {
-        this.logError({ method: 'makeRequest', data: config, e });
+        this.helper.logError({ method: 'makeRequest', data: config, e });
         console.log(params);
         process.exit();
         return null;
