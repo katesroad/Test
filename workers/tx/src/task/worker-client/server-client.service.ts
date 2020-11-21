@@ -11,7 +11,7 @@ export class ServerClientService extends ClientSerivce<
   readonly patterns = ['tx:count', 'tx:progress', 'tx:l6txs'];
 
   constructor(@Inject(SERVER_SERVICE_NAME) readonly client: ClientProxy) {
-    super(`ServerClient`);
+    super('ServerClient');
     this.client = client;
   }
 }

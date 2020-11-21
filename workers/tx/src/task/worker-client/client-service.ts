@@ -1,19 +1,14 @@
 import { ClientProxy } from '@nestjs/microservices';
-import { CustomLogger } from '../../common';
 import { ClientMsg } from '../../models';
 
-export abstract class ClientSerivce<T> extends CustomLogger {
+export class ClientSerivce<T> {
   protected client: ClientProxy;
   protected patterns: string[];
-  private name: string;
 
-  constructor(name: string) {
-    super(name);
-    this.name = name;
-  }
+  constructor(private readonly name: string) {}
 
   private async onApplicationBootstrap(): Promise<void> {
-    this.logInfoMsg(`${this.name} connected...`);
+    console.log(`${this.name} connected...\n`);
   }
 
   notify(msg: ClientMsg<T>): void {
