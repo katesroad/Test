@@ -11,12 +11,13 @@ import { TxHelperService } from './tx-helper';
 import { UnknownService } from './unknown.service';
 import { Erc20Service } from './erc20.service';
 import { TxProcessor } from './tx-processor';
-import { CustomLogger, TRANSACTION_TYPES } from '../../common';
 import { MbtcService } from './mbtc.service';
 import { ContractCreateService } from './contract-create.service';
+import { HelperService } from '../../helper';
+import { TRANSACTION_TYPES } from '../../common';
 
 @Injectable()
-export class TxProcessorService extends CustomLogger {
+export class TxProcessorService {
   constructor(
     private sendAsset: SendAssetService,
     private timelock: TimelockAssetService,
@@ -29,9 +30,9 @@ export class TxProcessorService extends CustomLogger {
     private erc20: Erc20Service,
     private mbtc: MbtcService,
     private contractCreate: ContractCreateService,
-    private helper: TxHelperService,
+    private txHelper: TxHelperService,
+    private helper: HelperService
   ) {
-    super('TxProcessorService');
   }
 
   async processTxs(rawTxs: RawTx[]): Promise<ProcessedTx[]> {
@@ -44,7 +45,7 @@ export class TxProcessorService extends CustomLogger {
     ); // don't save approval type to database
 
     const cost = Date.now() - startAt;
-    this.logInfoMsg(`Processed ${txs.length} txs, Cost ${cost} ms.`);
+    this.helper.logInfoMsg(`Processed ${txs.length} txs, Cost ${cost} ms.`);
 
     return this.sortTxs(txs);
   }
@@ -63,14 +64,14 @@ export class TxProcessorService extends CustomLogger {
     const { type } = rawTx;
     switch (type) {
       case 'SendAssetFunc':
-        return this.sendAsset.getTxsTokensAndData(rawTx, this.helper);
+        return this.sendAsset.getTxsTokensAndData(rawTx, this.txHelper);
       case 'TimeLockFunc':
-        return this.timelock.getTxsTokensAndData(rawTx, this.helper);
+        return this.timelock.getTxsTokensAndData(rawTx, this.txHelper);
       case 'GenAssetFunc':
         return this.genAsset.getTxsTokensAndData(rawTx);
       case 'AssetValueChangeFunc':
       case 'OldAssetValueChangeFunc':
-        return this.assetChange.getTxsTokensAndData(rawTx, this.helper);
+        return this.assetChange.getTxsTokensAndData(rawTx, this.txHelper);
       case 'GenNotationFunc':
         return this.genNotation.getTxsAssetsAndData(rawTx);
       case 'MakeSwapFunc':
@@ -83,17 +84,17 @@ export class TxProcessorService extends CustomLogger {
       case 'TakeMultiSwapFunc':
         return this.swap.getTxsTokensAndData(rawTx);
       case 'ERC20':
-        return this.erc20.getTxsTokensAndData(rawTx, this.helper);
+        return this.erc20.getTxsTokensAndData(rawTx, this.txHelper);
       case 'MBTC':
-        return this.mbtc.getTxsTokensAndData(rawTx, this.helper);
+        return this.mbtc.getTxsTokensAndData(rawTx, this.txHelper);
       case 'Origin':
-        return this.origin.getTxsTokensAndData(rawTx, this.helper);
+        return this.origin.getTxsTokensAndData(rawTx, this.txHelper);
       case 'CreateContract':
         return this.contractCreate.getTxsTokensAndData(rawTx);
       case 'ReportIllegalFunc':
       case 'unknown':
       default:
-        return this.unknown.getTxsAssetsAndData(rawTx, this.helper);
+        return this.unknown.getTxsAssetsAndData(rawTx, this.txHelper);
     }
   }
 
