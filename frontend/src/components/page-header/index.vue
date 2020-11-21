@@ -19,7 +19,7 @@
                />
             <blockchain-menu />
             <token-menu />
-            <swap-menu />
+            <!-- <swap-menu /> -->
             <!-- <router-link to="/news">News </router-link> -->
             <q-btn
                flat
@@ -39,7 +39,7 @@
 import SearchForm from "@/components/search-form";
 import BlockchainMenu from "./blockchain-menu";
 import TokenMenu from "./token-menu";
-import SwapMenu from "./swap-menu";
+// import SwapMenu from "./swap-menu";
 
 export default {
   name: "page-header",
@@ -73,7 +73,7 @@ export default {
     SearchForm,
     BlockchainMenu,
     TokenMenu,
-    SwapMenu
+    // SwapMenu
   }
 };
 </script>
