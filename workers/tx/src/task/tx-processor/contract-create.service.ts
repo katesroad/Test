@@ -2,14 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { Web3Service } from './tx-helper/web3';
 import { RawTx, TokenData, TokenMetaData, TxAssetsAndData } from '../../models';
 import { WorkerClientService } from '../worker-client';
-import { PgService } from '../pg';
+import { PgTokenService } from '../pg';
 
 @Injectable()
 export class ContractCreateService {
   constructor(
     private readonly web3: Web3Service,
     private workerClient: WorkerClientService,
-    private pg: PgService,
+    private pgToken: PgTokenService,
   ) {}
 
   async getTxsTokensAndData(rawTx: RawTx): Promise<TxAssetsAndData<any>> {
@@ -35,7 +35,7 @@ export class ContractCreateService {
         active_at: timestamp,
         token_type: 1,
       };
-      await this.pg.saveTokenInfo(token);
+      await this.pgToken.createTokenRecord(token);
       addressMsg.erc20 = true;
       data = token;
       tokens = [contract];

@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { RawTx, TokenData, TxAssetData, TxAssetsAndData } from '../../models';
-import { PgService } from '../pg';
+import { PgTokenService } from '../pg';
 
 @Injectable()
 export class GenAssetService {
-  constructor(private pg: PgService) {}
+  constructor(private pgToken: PgTokenService) {}
   async getTxsTokensAndData(
     rawTx: RawTx,
   ): Promise<TxAssetsAndData<TxAssetData>> {
@@ -49,7 +49,7 @@ export class GenAssetService {
 
     // add this dirty code as I want to create a table token_tx
     // which references token.hash as forign key
-    await this.pg.saveTokenInfo(token);
+    await this.pgToken.createTokenRecord(token);
 
     const data = { token: AssetID, symbol: Symbol, value };
     const tokens = [AssetID];
