@@ -7,7 +7,7 @@ import { FSN_TOKEN } from '../../../common';
 export class FusionTokenService {
   constructor(private rpc: RpcHelperService) {}
 
-  async getTokenSnapshot(token: string): Promise<TokenSnapshot> {
+  async getTokenSnapshot(token: string): Promise<TokenSnapshot | null> {
     if (token === FSN_TOKEN) return { symbol: 'FSN', precision: 18 };
 
     const method = 'fsn_getAsset';

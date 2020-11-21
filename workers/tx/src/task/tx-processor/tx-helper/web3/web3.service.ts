@@ -48,7 +48,7 @@ export class Web3Service {
       });
   }
 
-  async getTokenSnapshot(address: string): Promise<TokenSnapshot> {
+  async getTokenSnapshot(address: string): Promise<TokenSnapshot | null> {
     if (this.retried) {
       await this.sleep(200);
     }
