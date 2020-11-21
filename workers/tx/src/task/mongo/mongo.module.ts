@@ -3,7 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MongoConfig } from './mongo.config';
 import transactionSchema from './transaction.schema';
-import { MongoService } from './mongo.service';
+import { ReadTxsService } from './read-txs.service';
+import { StatsTxsService } from './stats-txs.service';
 
 @Global()
 @Module({
@@ -16,7 +17,7 @@ import { MongoService } from './mongo.service';
       { schema: transactionSchema, name: 'Transactions' },
     ]),
   ],
-  providers: [MongoService],
-  exports: [MongoService],
+  providers: [ReadTxsService, StatsTxsService],
+  exports: [ReadTxsService, StatsTxsService],
 })
 export class MongoModule {}

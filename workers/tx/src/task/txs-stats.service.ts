@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { RedisHelperService, HelperService, NetworkService } from '../helper';
-import { MongoService } from './mongo/mongo.service';
+import { StatsTxsService } from './mongo/stats-txs.service';
 import { PgTxsStatsService } from './pg/pg-txs-stats.service';
 
 @Injectable()
@@ -9,7 +9,7 @@ export class TxsStatsService {
 
   constructor(
     private redis: RedisHelperService,
-    private mongo: MongoService,
+    private statsTxs: StatsTxsService,
     private pgTxsStats: PgTxsStatsService,
     private helper: HelperService,
     private network: NetworkService,
@@ -37,7 +37,7 @@ export class TxsStatsService {
       networkTime,
     });
 
-    const statsData = await this.mongo.getTxsStatsForRange(range);
+    const statsData = await this.statsTxs.getTxsStatsForRange(range);
     const { stats_at } = statsData;
     const statsIsSaved = await this.pgTxsStats.saveTxsStats(statsData);
     if (statsIsSaved) {
@@ -71,7 +71,7 @@ export class TxsStatsService {
 
   private async getTxsStatsInitialTrackAt(): Promise<number> {
     let trackAt = await this.pgTxsStats.getTxStatsTrackStartTime();
-    if (!trackAt) trackAt = await this.mongo.getTxStatsTrackStartTime();
+    if (!trackAt) trackAt = await this.statsTxs.getTxStatsTrackStartTime();
 
     this.helper.logInfoMsg(`Txs stats tracking start at timestamp:${trackAt}`);
 
