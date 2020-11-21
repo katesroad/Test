@@ -104,8 +104,12 @@ export default {
       const { page, rowsPerPage, sortBy, descending } = props.pagination;
       const params = this.getQueryCmdAndAnchor(page);
       params.size = rowsPerPage;
-      params.sort = "qty";
       this.loading = true;
+      if(this.isERC20Token) {
+        params.sort = "qty";
+      } else {
+        params.sort = 'qty_own';
+      }
 
       this.$axios
         .get(`/token/${this.hash}/holders`, { params })

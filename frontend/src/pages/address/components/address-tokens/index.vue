@@ -23,6 +23,7 @@
             <router-link :to="`/token/${props.row.token}`">
               <b>
                 {{ props.row.symbol }}
+                <q-tooltip>{{props.row.token}}</q-tooltip>
               </b>
             </router-link>
           </q-td>

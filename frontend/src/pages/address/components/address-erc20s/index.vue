@@ -22,6 +22,7 @@
           <q-td key="token">
             <router-link :to="`/token/${props.row.token}`">
               {{ props.row.symbol }}
+              <q-tooltip>{{props.row.token}}</q-tooltip>
             </router-link>
           </q-td>
           <q-td key="qty" :props="props">
