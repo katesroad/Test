@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PgTxsService } from './pg';
 import { TxProcessorService } from './tx-processor';
-import { MongoService } from './mongo/mongo.service';
 import { ProcessedTx, TxsRange } from '../models';
 import { RedisHelperService, HelperService, NetworkService } from '../helper';
 import { WorkerClientService } from './worker-client';
 import { NotificationService } from './notification-service';
+import { ReadTxsService } from './mongo/read-txs.service';
 
 @Injectable()
 export class TxsTrackService {
@@ -17,7 +17,7 @@ export class TxsTrackService {
 
   constructor(
     private pgTxs: PgTxsService,
-    private mongo: MongoService,
+    private readTxs: ReadTxsService,
     private processor: TxProcessorService,
     private redis: RedisHelperService,
     private workerClient: WorkerClientService,
@@ -55,7 +55,7 @@ export class TxsTrackService {
       const { height, txs } = await this.network.getNetworkLBk();
       state = { height, txs };
     }
-    const { rawTxs, syncHeight } = await this.mongo.getRawTxsForRange(
+    const { rawTxs, syncHeight } = await this.readTxs.getRawTxsForRange(
       range,
       state,
     );
@@ -144,7 +144,7 @@ export class TxsTrackService {
   private async getTxInitialTrackAt(): Promise<number> {
     const trackAtKey = this.getTrackAtKey();
     let trackAt: number = await this.pgTxs.getTxTrackStartHeight();
-    if (!trackAt) trackAt = await this.mongo.getTxTrackStartHeight();
+    if (!trackAt) trackAt = await this.readTxs.getTxTrackStartHeight();
     if (trackAt) this.redis.cacheValue(trackAtKey, trackAt);
     return trackAt;
   }
