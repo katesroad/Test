@@ -6,7 +6,7 @@ import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
 export class BalanceClientService extends ClientSerivce<TxRelatedBalance> {
-  readonly patterns = ['balance', 'tl_balance'];
+  readonly patterns = ['balance'];
 
   constructor(@Inject(BALANCE_SERVICE_NAME) readonly client: ClientProxy) {
     super('BalanceClient');
