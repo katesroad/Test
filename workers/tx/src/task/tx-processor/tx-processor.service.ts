@@ -31,9 +31,8 @@ export class TxProcessorService {
     private mbtc: MbtcService,
     private contractCreate: ContractCreateService,
     private txHelper: TxHelperService,
-    private helper: HelperService
-  ) {
-  }
+    private helper: HelperService,
+  ) {}
 
   async processTxs(rawTxs: RawTx[]): Promise<ProcessedTx[]> {
     const startAt = Date.now();

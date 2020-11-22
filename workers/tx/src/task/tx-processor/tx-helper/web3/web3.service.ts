@@ -1,23 +1,29 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { TokenMetaData, TokenSnapshot } from '../../../../models';
-import { abi } from './abi';
 import { HelperService } from '../../../../helper';
+import { TokenMetaData, TokenSnapshot } from '../../../../models';
+import { ITokenService } from '../itoken-service.interface';
+import { abi } from './abi';
 
 const Web3 = require('web3');
 
 @Injectable()
-export class Web3Service {
+export class Web3Service implements ITokenService {
   private retried = 0;
   private web3: any;
 
   constructor(
     private readonly config: ConfigService,
-    private readonly: HelperService,
+    private readonly helper: HelperService,
   ) {
     this.init();
   }
 
+  /**
+   * Get contract address from a contract creationg transaction hash
+   * @param txHash: string;
+   * @returns contractAddress:string;
+   */
   async getContractAddress(txHash: string): Promise<string> {
     return this.web3.eth
       .getTransactionReceipt(txHash)
@@ -26,6 +32,11 @@ export class Web3Service {
       .catch(e => console.log);
   }
 
+  /**
+   * Get erc20 token meta information
+   * @param hash: erc20 contract address hash
+   * @returns token: TokenMetata | null
+   */
   async getTokenInfo(hash: string): Promise<TokenMetaData | null> {
     const contract = new this.web3.eth.Contract(abi, hash);
     const props = ['symbol', 'name', 'decimals', 'totalSupply'];
@@ -48,11 +59,16 @@ export class Web3Service {
       });
   }
 
-  async getTokenSnapshot(address: string): Promise<TokenSnapshot | null> {
+  /**
+   * Get token's symbol and token's decimals by token hash
+   * @param contracAdress erc20 token contract address
+   * @returns snapshot: TokenSnapshot | null
+   */
+  async getTokenSnapshot(contracAdress: string): Promise<TokenSnapshot | null> {
     if (this.retried) {
-      await this.sleep(200);
+      await this.helper.sleep(200);
     }
-    return this.getTokenInfo(address)
+    return this.getTokenInfo(contracAdress)
       .then(data => {
         const { symbol, precision } = data;
         return { symbol, precision };
@@ -74,7 +90,7 @@ export class Web3Service {
           );
           return null;
         }
-        return this.getTokenSnapshot(address);
+        return this.getTokenSnapshot(contracAdress);
       });
   }
 
@@ -87,14 +103,9 @@ export class Web3Service {
     });
   }
 
-  private sleep(ms: number) {
-    return new Promise(resolve => {
-      setTimeout(() => {
-        resolve(null);
-      }, ms);
-    });
-  }
-
+  /**
+   * Init web3 instance for interacting with fsn network/contract purpose
+   */
   private init() {
     const WSS_PROVIDER = this.config.get('wss_url');
     const provider = new Web3.providers.WebsocketProvider(WSS_PROVIDER, {
