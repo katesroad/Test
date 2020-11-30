@@ -29,14 +29,6 @@
           </li>
         </ul>
       </li>
-      <li class="category">
-      <span class="category__name">Swaps</span>
-        <ul>
-          <li>
-            <router-link to='/anyswap'>anyswap</router-link>
-          </li>
-        </ul>
-      </li>
     </ul>
   </nav>
 </template>

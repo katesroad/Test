@@ -5,6 +5,7 @@ import {
   RmqContext,
   MessagePattern,
 } from '@nestjs/microservices';
+import { resolveSoa } from 'dns';
 import { AppService } from './app.service';
 import { TxBalanceMsg } from './models';
 
@@ -27,7 +28,7 @@ export class AppController {
     });
   }
 
-  private ackMsg(ctx: RmqContext, stats: { startAt: number; size: number }) {
+  private async ackMsg(ctx: RmqContext, stats: { startAt: number; size: number }) {
     const rawMsg = ctx.getMessage();
     const channel = ctx.getChannelRef();
     const { startAt, size } = stats;
@@ -39,7 +40,16 @@ export class AppController {
       `\n Ack ${msg.pattern}:
          ${size} holders, avgCost: ${avgCost} ms/holder, cost ${cost} ms \n`,
     );
+    // avoid rpc service crash
+    await this.sleep(200);
+    channel.ackMsg(rawMsg);
+  }
 
-    channel.ack(rawMsg);
+  private sleep(ms) {
+    return new Promise((resolve ) => {
+      setTimeout(() => {
+        resolve(ms);
+      }, ms);
+    })
   }
 }
