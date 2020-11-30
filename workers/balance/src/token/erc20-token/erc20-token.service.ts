@@ -75,6 +75,7 @@ export class Erc20TokenService extends CustomLogger implements IToken {
     );
     const reload = () => {
       try {
+        process.exit();
         provider.disconnect();
         this.init();
       } catch {}
