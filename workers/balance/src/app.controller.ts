@@ -28,7 +28,10 @@ export class AppController {
     });
   }
 
-  private async ackMsg(ctx: RmqContext, stats: { startAt: number; size: number }) {
+  private async ackMsg(
+    ctx: RmqContext,
+    stats: { startAt: number; size: number },
+  ) {
     const rawMsg = ctx.getMessage();
     const channel = ctx.getChannelRef();
     const { startAt, size } = stats;
@@ -40,16 +43,7 @@ export class AppController {
       `\n Ack ${msg.pattern}:
          ${size} holders, avgCost: ${avgCost} ms/holder, cost ${cost} ms \n`,
     );
-    // avoid rpc service crash
-    await this.sleep(200);
-    channel.ackMsg(rawMsg);
-  }
 
-  private sleep(ms) {
-    return new Promise((resolve ) => {
-      setTimeout(() => {
-        resolve(ms);
-      }, ms);
-    })
+    channel.ack(rawMsg);
   }
 }
